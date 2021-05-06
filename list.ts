@@ -12,7 +12,7 @@ export default async function list(label: string, options: string[]): Promise<st
       await println(PREFIX + asPromptText(label))
       for (let index = 0; index < options.length; index++) {
         const option = options[index]
-        await print(highlightText('  ' + option, selectedIndex === index) + (index + 1 === options.length ? '' : '\n'))
+        await print(highlightText('  ' + option, { shouldHighlight: selectedIndex === index }) + (index + 1 === options.length ? '' : '\n'))
       }
     },
     actions: [

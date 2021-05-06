@@ -12,10 +12,30 @@ export function asPromptText(text: string, reset: boolean = true) {
   if (reset) return `\x1b[0;1m${text}\x1b[0m `
   return `\x1b[0;1m${text} `
 }
-export function highlightText(text: string, shouldHighlight: boolean = true, reset: boolean = true) {
+type LuminosityType = 'light' | 'dark'
+type ColorType = 'grey' | 'red' | 'yellow' | 'green' | 'blue' | 'purple' | 'cyan'
+type Color = `${LuminosityType}${Capitalize<ColorType>}`
+const COLORS: { [C in Color]: number } = {
+  darkGrey: 30,
+  darkRed: 31,
+  darkYellow: 32,
+  darkGreen: 33,
+  darkBlue: 34,
+  darkPurple: 35,
+  darkCyan: 36,
+  lightGrey: 90,
+  lightRed: 91,
+  lightYellow: 92,
+  lightGreen: 93,
+  lightBlue: 94,
+  lightPurple: 95,
+  lightCyan: 96,
+}
+export const PRIMARY_COLOR_NAME: Color = 'lightBlue'
+export function highlightText(text: string, { shouldHighlight = true, reset = true, color = PRIMARY_COLOR_NAME }: {shouldHighlight?: boolean, reset?: boolean, color?: Color } = {}) {
   if (shouldHighlight) {
-    if (reset) return PRIMARY_COLOR + text + RESET_COLOR
-    return PRIMARY_COLOR + text
+    if (reset) return '\x1b[' + COLORS[color] + 'm' + text + RESET_COLOR
+    return '\x1b[' + COLORS[color] + 'm' + text
   } else {
     if (reset) return text + RESET_COLOR
     return text
