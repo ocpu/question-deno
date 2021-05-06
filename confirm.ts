@@ -1,9 +1,20 @@
 import KeyCombo from './KeyCombo.ts'
 import { print, println, PREFIX, asPromptText, CLEAR_LINE, highlightText, createRenderer, moveCursor } from './util.ts'
-
-export default async function confirm(label: string, defaultValue?: boolean | undefined): Promise<boolean | undefined> {
+export interface ConfirmOptions {
+  defaultValue?: boolean
+  positiveText?: string
+  negativeText?: string
+}
+export default async function confirm(label: string, defaultValue?: boolean | ConfirmOptions | undefined): Promise<boolean | undefined> {
   let cursorIndex = 0
-  const prompt = label + (typeof defaultValue === 'boolean' ? defaultValue ? ' [Y/n]' : ' [y/N]' : ' [y/n]')
+  const _positiveText = typeof defaultValue === 'object' && typeof defaultValue.positiveText !== 'undefined' ? defaultValue.positiveText : 'Yes'
+  const _negativeText = typeof defaultValue === 'object' && typeof defaultValue.negativeText !== 'undefined' ? defaultValue.negativeText : 'No'
+  const positiveText = _positiveText.substring(0, 1).toUpperCase() + _positiveText.substring(1).toLowerCase()
+  const negativeText = _negativeText.substring(0, 1).toUpperCase() + _negativeText.substring(1).toLowerCase()
+  const _defaultValue = typeof defaultValue === 'boolean' || typeof defaultValue === 'undefined' ? defaultValue : defaultValue.defaultValue
+  const positiveChar = _defaultValue === true ? positiveText[0] : positiveText[0].toLowerCase()
+  const negativeChar = _defaultValue === false ? negativeText[0] : negativeText[0].toLowerCase()
+  const prompt = label + ` [${positiveChar}/${negativeChar}]`
   let text = ''
   return createRenderer({
     label,
@@ -61,14 +72,14 @@ export default async function confirm(label: string, defaultValue?: boolean | un
           ? typeof defaultValue === 'boolean'
             ? defaultValue
             : undefined
-          : trimmed[0].toLowerCase() === 'y'
+          : trimmed[0].toLowerCase() === positiveChar.toLowerCase()
             ? true
-            : trimmed[0].toLowerCase() === 'n'
+            : trimmed[0].toLowerCase() === negativeChar.toLowerCase()
               ? false
               : undefined
         if (result === undefined) return
         await clear()
-        await println(PREFIX + asPromptText(label) + highlightText(result ? 'Yes' : 'No'))
+        await println(PREFIX + asPromptText(label) + highlightText(result ? positiveText : negativeText))
         return { result }
       }]
     ],

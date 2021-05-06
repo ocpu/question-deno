@@ -1,4 +1,4 @@
-import confirm from './confirm.ts'
+import confirm, { ConfirmOptions } from './confirm.ts'
 import checkbox from './checkbox.ts'
 import list from './list.ts'
 import input from './input.ts'
@@ -67,7 +67,7 @@ export default function question(type: 'checkbox', label: string, options: strin
  * @param defaultValue The value that will determine the resulting value if none was provided.
  * @returns The boolean value from the answer or `undefined` if canceled.
  */
-export default function question(type: 'confirm', label: string, defaultValue?: boolean | undefined): Promise<boolean | undefined>;
+export default function question(type: 'confirm', label: string, defaultValue?: boolean | ConfirmOptions | undefined): Promise<boolean | undefined>;
 /**
  * Create a generic text input question requesting the user to input text in a free form format.
  * A default value can be provided and if the free form text input is blank the value will be
