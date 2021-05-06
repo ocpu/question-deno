@@ -34,6 +34,20 @@ export default async function checkbox(label: string, options: string[]): Promis
         await clear()
         await prompt()
       }],
+      [KeyCombo.parse('home'), async ({clear,prompt}) => {
+        const newIndex = 0
+        if (newIndex === cursorIndex) return
+        cursorIndex = newIndex
+        await clear()
+        await prompt()
+      }],
+      [KeyCombo.parse('end'), async ({clear,prompt}) => {
+        const newIndex = options.length - 1
+        if (newIndex === cursorIndex) return
+        cursorIndex = newIndex
+        await clear()
+        await prompt()
+      }],
       [KeyCombo.parse('space'), async ({clear,prompt}) => {
         const indexOfIndex = selectedIndices.indexOf(cursorIndex)
         if (indexOfIndex !== -1) selectedIndices.splice(indexOfIndex, 1)
