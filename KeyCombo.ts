@@ -49,18 +49,13 @@ export default class KeyCombo {
    * Creates a new KeyCombo instance.
    */
   constructor({ ctrl, shift, alt, meta, key }: KeyComboParams = {}) {
-    /** @readonly */
     this.ctrl = ctrl ?? false
-    /** @readonly */
     this.shift = shift ?? false
-    /** @readonly */
     this.alt = alt ?? false
-    /** @readonly */
     this.meta = meta ?? false
-    /** @readonly */
     this.key = key ?? ''
 
-    if (this.alt) throw new Error('The Alt/Option key is not supported!')
+    // if (this.alt) throw new Error('The Alt/Option key is not supported!')
   }
 
   get option() {
@@ -125,12 +120,10 @@ export default class KeyCombo {
    * @example
    * ```javascript
    * const saveKeyCombo = KeyCombo.parse('Ctrl+S')
-   * document.addEventListener('keydown', event => {
-   *   if (saveKeyCombo.test(event)) {
-   *     event.preventDefault()
-   *     console.log('Saving...')
-   *   }
-   * })
+   * if (saveKeyCombo.test(keypress)) {
+   *   event.preventDefault()
+   *   console.log('Saving...')
+   * }
    * ```
    * @param event The event to test this key combo against.
    * @returns True if the keys in the event matches the key combo.
