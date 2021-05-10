@@ -1,6 +1,6 @@
 # Question
 
-This is a module that can handle CLI questions/inquiries that can be resolved in a CLI. This module requires the use of `--unstable` flag since the raw reader API is not finalized yet. Test the different question types: `deno run --unstable https://raw.githubusercontent.com/ocpu/question-deno/master/test.ts`
+This is a module that can handle CLI questions/inquiries that can be resolved in a CLI. This module requires the use of `--unstable` flag since the raw reader API is not finalized yet.
 
 ```typescript
 import question from 'https://raw.githubusercontent.com/ocpu/question-deno/master/mod.ts'
@@ -12,6 +12,8 @@ else console.log('X will not be removed')
 ```
 
 Each input type is documented in the overload list for the question function, it describes the use, the parameters, and controls.
+
+Test the different question types: `deno run --unstable https://raw.githubusercontent.com/ocpu/question-deno/master/test.ts`
 
 ## Question Types
 Current question types:
