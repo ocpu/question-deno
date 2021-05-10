@@ -1,6 +1,22 @@
 import KeyCombo from './KeyCombo.ts'
 import { print, println, HIDE_CURSOR, SHOW_CURSOR, PREFIX, asPromptText, CLEAR_LINE, MOVE_UP_1, highlightText, createRenderer, moveCursor } from './util.ts'
 
+/**
+ * Creates a list of selectable items from which one item can be chosen. If no items are available
+ * to be selected this will return `undefined` without a question prompt.
+ *
+ * Controls:
+ * - `Ctrl+c` will have the question canceled and return `undefined`.
+ * - `Ctrl+d` will exit the whole script no questions asked with a `Deno.exit()`.
+ * - `Up` arrow will move the selected item up once if able.
+ * - `Down` arrow will move the selected item down once if able.
+ * - `Enter` will return the currently selected item.
+ *
+ * Requires `--unstable` until the `Deno.setRaw` API is finalized.
+ * @param label The label the question will have.
+ * @param options The options the user has to choose from.
+ * @returns The selected option or `undefined` if canceled or empty.
+ */
 export default async function list(label: string, options: string[]): Promise<string | undefined> {
   if (options.length === 0) return undefined
   let selectedIndex = 0

@@ -4,7 +4,7 @@ import list from './list.ts'
 import input from './input.ts'
 
 /**
- * Creates a selectable list from which one item will be chosen. If no items are available
+ * Creates a list of selectable items from which one item can be chosen. If no items are available
  * to be selected this will return `undefined` without a question prompt.
  *
  * Controls:
@@ -49,8 +49,9 @@ export default function question(type: 'checkbox', label: string, options: strin
  * - `true` will suffix the prompt with `[Y/n]`
  * - `false` will suffix the prompt with `[y/N]`
  *
- * The only valid values are anything starting with y or n uppercase or lowercase. The prompt
- * can be canceled and will then return `undefined`.
+ * The only valid values are anything starting with y or n uppercase or lowercase. The y and
+ * n is derived from the positive and negative labels. You can customize the labels in the
+ * options object The prompt can be canceled and will then return `undefined`.
  *
  * Controls:
  * - `Ctrl+c` will have the question canceled and return `undefined`.
@@ -70,7 +71,7 @@ export default function question(type: 'checkbox', label: string, options: strin
 export default function question(type: 'confirm', label: string, defaultValue?: boolean | ConfirmOptions | undefined): Promise<boolean | undefined>;
 /**
  * Create a generic text input question requesting the user to input text in a free form format.
- * A default value can be provided and if the free form text input is blank the value will be
+ * A default value can be provided and if the free form text input is blank that value will be
  * used instead.
  *
  * Controls:
@@ -83,7 +84,7 @@ export default function question(type: 'confirm', label: string, defaultValue?: 
  * - `Enter` will return the test inputted or the provided default value.
  *
  * Requires `--unstable` until the `Deno.setRaw` API is finalized.
- * @param type The confirm type.
+ * @param type The input type.
  * @param label The label the question will have.
  * @param defaultValue The value that will determine the resulting value if none was provided.
  * @returns The answer text, default value text, or `undefined` if canceled.

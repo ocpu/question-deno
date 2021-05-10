@@ -1,6 +1,25 @@
 import KeyCombo from './KeyCombo.ts'
 import { print, println, PREFIX, asPromptText, CLEAR_LINE, highlightText, createRenderer, moveCursor } from './util.ts'
 
+/**
+ * Create a generic text input question requesting the user to input text in a free form format.
+ * A default value can be provided and if the free form text input is blank that value will be
+ * used instead.
+ *
+ * Controls:
+ * - `Ctrl+c` will have the question canceled and return `undefined`.
+ * - `Ctrl+d` will exit the whole script no questions asked with a `Deno.exit()`.
+ * - `Up` arrow or `Home` key will move the cursor to the start of the prompt text.
+ * - `Down` arrow or `End` key will move the cursor to the end of the prompt text.
+ * - `Left` arrow will move the cursor one step to the left once if able.
+ * - `Right` arrow will move the cursor one step to the right once if able.
+ * - `Enter` will return the test inputted or the provided default value.
+ *
+ * Requires `--unstable` until the `Deno.setRaw` API is finalized.
+ * @param label The label the question will have.
+ * @param defaultValue The value that will determine the resulting value if none was provided.
+ * @returns The answer text, default value text, or `undefined` if canceled.
+ */
 export default async function input(label: string, defaultValue?: string | undefined): Promise<string | undefined> {
   let cursorIndex = 0
   const prompt = asPromptText(label) + (typeof defaultValue === 'string' ? '[' + defaultValue + '] ' : '')
