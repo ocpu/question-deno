@@ -19,6 +19,7 @@ Current question types:
 - `confirm`: Ask for a confirmation about an action.
 - `list`: Provide a list from which the user can chose one option.
 - `checkbox`: Provide a list of options from which the user can mark the options they want.
+- `password`: Provide a free form password input with substitution text.
 
 ### Input
 
@@ -82,3 +83,22 @@ Controls:
 - `Down` arrow will move the selected item down once if able.
 - `Space` will mark/unmark the selected item.
 - `Enter` will return all marked items in a list.
+
+### Password
+
+Creates a free form text input that does not print the characters normally printed by the `input`
+prompt. The characters are substituted for a substitute string you can provide. If the substitute
+parameter is a boolean false no substitute characters will be printed.
+
+The substitute string if longer than 1 character can be called a pattern and will also be printed
+in that pattern. So if you have a pattern of `<>` and that length of the text i 5 the substitution
+will look like `<><><`.
+
+Controls:
+- `Ctrl+c` will have the question canceled and return `undefined`.
+- `Ctrl+d` will exit the whole script no questions asked with a `Deno.exit()`.
+- `Up` arrow or `Home` key will move the cursor to the start of the prompt text.
+- `Down` arrow or `End` key will move the cursor to the end of the prompt text.
+- `Left` arrow will move the cursor one step to the left once if able.
+- `Right` arrow will move the cursor one step to the right once if able.
+- `Enter` will return the test inputted or the provided default value.

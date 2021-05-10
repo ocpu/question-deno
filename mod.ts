@@ -2,6 +2,7 @@ import confirm, { ConfirmOptions } from './confirm.ts'
 import checkbox from './checkbox.ts'
 import list from './list.ts'
 import input from './input.ts'
+import password from './password.ts'
 
 /**
  * Creates a list of selectable items from which one item can be chosen. If no items are available
@@ -90,12 +91,38 @@ export default function question(type: 'confirm', label: string, defaultValue?: 
  * @returns The answer text, default value text, or `undefined` if canceled.
  */
 export default function question(type: 'input', label: string, defaultValue?: string | undefined): Promise<string | undefined>;
+/**
+ * Creates a free form text input that does not print the characters normally printed by the `input`
+ * prompt. The characters are substituted for a substitute string you can provide. If the substitute
+ * parameter is a boolean false no substitute characters will be printed.
+ *
+ * The substitute string if longer than 1 character can be called a pattern and will also be printed
+ * in that pattern. So if you have a pattern of `<>` and that length of the text i 5 the substitution
+ * will look like `<><><`.
+ *
+ * Controls:
+ * - `Ctrl+c` will have the question canceled and return `undefined`.
+ * - `Ctrl+d` will exit the whole script no questions asked with a `Deno.exit()`.
+ * - `Up` arrow or `Home` key will move the cursor to the start of the prompt text.
+ * - `Down` arrow or `End` key will move the cursor to the end of the prompt text.
+ * - `Left` arrow will move the cursor one step to the left once if able.
+ * - `Right` arrow will move the cursor one step to the right once if able.
+ * - `Enter` will return the test inputted or the provided default value.
+ *
+ * Requires `--unstable` until the `Deno.setRaw` API is finalized.
+ * @param type The password type.
+ * @param label The label the question will have.
+ * @param substitute The substitution string or boolean indicating if you want a substitution string.
+ * @returns The answer text or `undefined` if canceled.
+ */
+export default function question(type: 'password', label: string, substitute?: boolean | string | undefined): Promise<string | undefined>;
 export default function question(type: string, ...opts: any[]): Promise<any | undefined> {
   switch (type) {
     case 'list': return list(...(opts as Parameters<typeof list>))
     case 'confirm': return confirm(...(opts as Parameters<typeof confirm>))
     case 'checkbox': return checkbox(...(opts as Parameters<typeof checkbox>))
     case 'input': return input(...(opts as Parameters<typeof input>))
+    case 'password': return password(...(opts as Parameters<typeof password>))
     default: throw new Error(`Unsupported type: ${type}`)
   }
 }
