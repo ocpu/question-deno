@@ -72,10 +72,10 @@ export async function createRenderer<R>(options: CreateRendererOptions<R>): Prom
   keys:for await (const keypress of readKeypress()) {
     if (cancelKeyCombo.test(keypress)) {
       await options.clear()
-      println(SHOW_CURSOR + PREFIX + asPromptText(options.label) + highlightText(`<cancel>`))
+      await println(SHOW_CURSOR + PREFIX + asPromptText(options.label) + highlightText(`<cancel>`))
       return undefined
     } else if (exitKeyCombo.test(keypress)) {
-      println(SHOW_CURSOR)
+      await println(SHOW_CURSOR)
       Deno.exit(0)
     }
 
