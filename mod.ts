@@ -23,6 +23,27 @@ import password from './password.ts'
  */
 export default function question(type: 'list', label: string, options: string[]): Promise<string | undefined>;
 /**
+ * Creates a list of selectable items from which one item can be chosen. If no items are available
+ * to be selected this will return `undefined` without a question prompt.
+ * 
+ * The options parameter can also be a plain object where the key is the label and the value is the
+ * result if that option was picked.
+ *
+ * Controls:
+ * - `Ctrl+c` will have the question canceled and return `undefined`.
+ * - `Ctrl+d` will exit the whole script no questions asked with a `Deno.exit()`.
+ * - `Up` arrow will move the selected item up once if able.
+ * - `Down` arrow will move the selected item down once if able.
+ * - `Enter` will return the currently selected item.
+ *
+ * Requires `--unstable` until the `Deno.setRaw` API is finalized.
+ * @param type The list type.
+ * @param label The label the question will have.
+ * @param options The options the user has to choose from.
+ * @returns The selected option or `undefined` if canceled or empty.
+ */
+export default function question<T>(type: 'list', label: string, options: Record<string, T>): Promise<T | undefined>;
+/**
  * Creates a list of selectable items from which one item will be chosen. If no items are available
  * to be selected this will return `undefined` without a question prompt.
  *

@@ -73,6 +73,20 @@ Controls:
 - `Down` arrow will move the selected item down once if able.
 - `Enter` will return the currently selected item.
 
+The options can either be a list of strings or an object describing the different options.
+
+```typescript
+import question from 'https://raw.githubusercontent.com/ocpu/question-deno/master/mod.ts'
+
+await question('list', 'Select groceries?', ['Cheese', 'Milk', 'Tofu'])
+await question('list', 'Select groceries?', {
+  // <Label>: <value> - value can be anything
+  'Cheese': 'cheese',
+  'Milk': 'milk',
+  'Tofu': 'tofu',
+})
+```
+
 ### Checkbox
 
 Creates a list of selectable items from which one item will be chosen. If no items are available
