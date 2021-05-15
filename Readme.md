@@ -17,11 +17,11 @@ Test the different question types: `deno run --unstable https://raw.githubuserco
 
 ## Question Types
 Current question types:
-- `input`: Ask the user for a free form text answer.
-- `confirm`: Ask for a confirmation about an action.
-- `list`: Provide a list from which the user can chose one option.
-- `checkbox`: Provide a list of options from which the user can mark the options they want.
-- `password`: Provide a free form password input with substitution text.
+- [`input`](#input): Ask the user for a free form text answer.
+- [`confirm`](#confirm): Ask for a confirmation about an action.
+- [`list`](#list): Provide a list from which the user can chose one option.
+- [`checkbox`](#checkbox): Provide a list of options from which the user can mark the options they want.
+- [`password`](#password): Provide a free form password input with substitution text.
 
 ### Input
 
