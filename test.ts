@@ -13,3 +13,8 @@ console.log('Result: %s', await question('list', 'List with object? (will print)
   'Milk': 'milk',
   'Tofu': 'tofu',
 }))
+console.log('Result: %s', await question('checkbox', 'Select stuff with object? (will print)', {
+  'Cheese': { value: 'cheese', selected: true },
+  'Garlic': { value: 'garlic' },
+  'Salami': { value: 'salami' },
+}))

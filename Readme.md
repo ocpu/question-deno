@@ -100,6 +100,29 @@ Controls:
 - `Space` will mark/unmark the selected item.
 - `Enter` will return all marked items in a list.
 
+The options can either be a list of strings or an object describing the different options.
+
+If the options parameter is a plain object where the key is the label and the value is a
+object definition how the option is represented in the list and with a value. The representation
+keys are:
+- `dependencies`: This is a value that takes a index, label, or a list of indices and labels to
+  express the reliance of a different option. So whenever any dependant option is select this one
+  is too. Same for deselects.
+- `selected`: This makes the option selected by default. If the option depends on any other options
+  They will also be selected.
+
+```typescript
+import question from 'https://raw.githubusercontent.com/ocpu/question-deno/master/mod.ts'
+
+await question('checkbox', 'Select toppings?', ['Cheese', 'Garlic', 'Salami'])
+await question('checkbox', 'Select toppings?', {
+  // <Label>: <Options> - value can be anything
+  'Cheese': { value: 'cheese', selected: true },
+  'Garlic': { value: 'garlic' },
+  'Salami': { value: 'salami' },
+})
+```
+
 ### Password
 
 Creates a free form text input that does not print the characters normally printed by the `input`

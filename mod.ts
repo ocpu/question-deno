@@ -1,5 +1,5 @@
 import confirm, { ConfirmOptions } from './confirm.ts'
-import checkbox from './checkbox.ts'
+import checkbox, { ObjectOption } from './checkbox.ts'
 import list from './list.ts'
 import input from './input.ts'
 import password from './password.ts'
@@ -62,6 +62,50 @@ export default function question<T>(type: 'list', label: string, options: Record
  * @returns The marked options or `undefined` if canceled or empty.
  */
 export default function question(type: 'checkbox', label: string, options: string[]): Promise<string[] | undefined>;
+/**
+ * Creates a list of selectable items from which one item will be chosen. If no items are available
+ * to be selected this will return `undefined` without a question prompt.
+ * 
+ * The options parameter is a plain object where the key is the label and the value is a
+ * object definition how the option is represented in the list and with a value. The representation
+ * keys are:
+ * - `dependencies`: This is a value that takes a index, label, or a list of indices and labels to
+ *   express the reliance of a different option. So whenever any dependant option is select this one
+ *   is too. Same for deselects.
+ * - `selected`: This makes the option selected by default. If the option depends on any other options
+ *   They will also be selected.
+ * 
+ * ```typescript
+ * const options = {
+ *   'Value 1': { value: 1 },
+ *   'Value 2': { value: 2 },
+ *   'Value 3': { value: 3 },
+ * }
+ * ```
+ * 
+ * ```typescript
+ * const options = {
+ *   'Value 1': { value: 1 },
+ *   'Value 2': { value: 2, dependencies: ['Value 1'] },
+ *   'Value 3': { value: 3, selected: true },
+ * }
+ * ```
+ *
+ * Controls:
+ * - `Ctrl+c` will have the question canceled and return `undefined`.
+ * - `Ctrl+d` will exit the whole script no questions asked with a `Deno.exit()`.
+ * - `Up` arrow will move the selected item up once if able.
+ * - `Down` arrow will move the selected item down once if able.
+ * - `Space` will mark/unmark the selected item.
+ * - `Enter` will return all marked items in a list.
+ *
+ * Requires `--unstable` until the `Deno.setRaw` API is finalized.
+ * @param type The checkbox type.
+ * @param label The label the question will have.
+ * @param options The options the user has to choose from.
+ * @returns The marked options or `undefined` if canceled or empty.
+ */
+export default function question<T>(type: 'checkbox', label: string, options: Record<string, ObjectOption<T>>): Promise<T[] | undefined>;
 /**
  * Create a confirmation question that resolves to a true or false based on user input. It
  * takes an `undefined`, `true`, or `false` value as the default value. Each of the default
