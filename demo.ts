@@ -18,3 +18,29 @@ console.log('Result: %s', await question('checkbox', 'Select stuff with object? 
   'Garlic': { value: 'garlic' },
   'Salami': { value: 'salami' },
 }))
+
+const commonPorts = {
+  'SSH': 22,
+  'DNS': 53,
+  'HTTP': 80,
+  'HTTPS': 443,
+  'Gopher': 70,
+  'MySQL': 3306,
+  'Postgres': 5432,
+  'MongoDB': 27017,
+  'Minecraft': 25565,
+  'LDAP': 389,
+  'LDAPS': 636,
+  'Telnet': 23,
+  'Telnet TLS': 992,
+  'SMTP': 25,
+  'IMAP': 143,
+  'STUN/TURN': 3478,
+  'STUN/TURN TLS': 5349,
+  'FTP Data Transfer': 20,
+  'FTP Control': 21,
+  'FTPS Data Transfer': 989,
+  'FTPS Control': 990,
+}
+
+await question('list', 'Select service:', commonPorts, { windowSize: 7 })

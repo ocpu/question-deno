@@ -1,6 +1,6 @@
 import confirm, { ConfirmOptions } from './confirm.ts'
 import checkbox, { ObjectOption } from './checkbox.ts'
-import list from './list.ts'
+import list, { ListOptions } from './list.ts'
 import input from './input.ts'
 import password from './password.ts'
 
@@ -21,7 +21,7 @@ import password from './password.ts'
  * @param options The options the user has to choose from.
  * @returns The selected option or `undefined` if canceled or empty.
  */
-export default function question(type: 'list', label: string, options: string[]): Promise<string | undefined>;
+export default function question(type: 'list', label: string, options: string[], listOptions?: ListOptions): Promise<string | undefined>;
 /**
  * Creates a list of selectable items from which one item can be chosen. If no items are available
  * to be selected this will return `undefined` without a question prompt.
@@ -42,7 +42,7 @@ export default function question(type: 'list', label: string, options: string[])
  * @param options The options the user has to choose from.
  * @returns The selected option or `undefined` if canceled or empty.
  */
-export default function question<T>(type: 'list', label: string, options: Record<string, T>): Promise<T | undefined>;
+export default function question<T>(type: 'list', label: string, options: Record<string, T>, listOptions?: ListOptions): Promise<T | undefined>;
 /**
  * Creates a list of selectable items from which one item will be chosen. If no items are available
  * to be selected this will return `undefined` without a question prompt.
