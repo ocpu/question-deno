@@ -13,7 +13,7 @@ else console.log('X will not be removed')
 
 Each input type is documented in the overload list for the question function, it describes the use, the parameters, and controls.
 
-Test the different question types: `deno run --unstable https://raw.githubusercontent.com/ocpu/question-deno/master/test.ts`
+Test the different question types: `deno run --unstable https://raw.githubusercontent.com/ocpu/question-deno/master/demo.ts`
 
 ## Question Types
 Current question types:
