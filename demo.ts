@@ -44,3 +44,4 @@ const commonPorts = {
 }
 
 await question('list', 'Select service:', commonPorts, { windowSize: 7 })
+await question('checkbox', 'Select Services:', Object.fromEntries(Object.entries(commonPorts).map(([label, value]) => [label, { value }])), { windowSize: 7 })

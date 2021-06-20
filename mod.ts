@@ -1,5 +1,5 @@
 import confirm, { ConfirmOptions } from './confirm.ts'
-import checkbox, { ObjectOption } from './checkbox.ts'
+import checkbox, { CheckboxOptions, ObjectOption } from './checkbox.ts'
 import list, { ListOptions } from './list.ts'
 import input from './input.ts'
 import password from './password.ts'
@@ -61,7 +61,7 @@ export default function question<T>(type: 'list', label: string, options: Record
  * @param options The options the user has to choose from.
  * @returns The marked options or `undefined` if canceled or empty.
  */
-export default function question(type: 'checkbox', label: string, options: string[]): Promise<string[] | undefined>;
+export default function question(type: 'checkbox', label: string, options: string[], checkboxOptions?: CheckboxOptions): Promise<string[] | undefined>;
 /**
  * Creates a list of selectable items from which one item will be chosen. If no items are available
  * to be selected this will return `undefined` without a question prompt.
@@ -105,7 +105,7 @@ export default function question(type: 'checkbox', label: string, options: strin
  * @param options The options the user has to choose from.
  * @returns The marked options or `undefined` if canceled or empty.
  */
-export default function question<T>(type: 'checkbox', label: string, options: Record<string, ObjectOption<T>>): Promise<T[] | undefined>;
+export default function question<T>(type: 'checkbox', label: string, options: Record<string, ObjectOption<T>>, checkboxOptions?: CheckboxOptions): Promise<T[] | undefined>;
 /**
  * Create a confirmation question that resolves to a true or false based on user input. It
  * takes an `undefined`, `true`, or `false` value as the default value. Each of the default

@@ -8,6 +8,35 @@ interface Option<T> {
   onDeselect?(index: number): boolean
 }
 
+export interface CheckboxOptions {
+  /**
+   * The maximum amount of items visible at one time.
+   * 
+   * Default: The amount of items passed in.
+   */
+  windowSize?: number
+  /**
+   * The pattern to repeat for when there are more items either above or below the current window.
+   * 
+   * Default: `-`
+   */
+  moreContentPattern?: string
+  /**
+   * The pattern to repeat for when there are no additional items either above or below the current window.
+   * 
+   * Default: `=`
+   */
+  noMoreContentPattern?: string
+  /**
+   * Whether or not to offset the selected item while going through the item list.
+   * If there are more items above or below (if enabled) it will select the next to last
+   * or first of the window always leaving 1 item offset if more items are available.
+   * 
+   * Default: `true`
+   */
+  offsetWindowScroll?: boolean
+}
+
 /**
  * Creates a list of selectable items from which one item will be chosen. If no items are available
  * to be selected this will return `undefined` without a question prompt.
@@ -50,7 +79,7 @@ interface Option<T> {
  * @param options The options the user has to choose from.
  * @returns The marked options or `undefined` if canceled or empty.
  */
-export default async function checkbox<T = string>(label: string, options: T[] | Record<string, ObjectOption<T>>): Promise<T[] | undefined> {
+export default async function checkbox<T = string>(label: string, options: T[] | Record<string, ObjectOption<T>>, checkboxOptions?: CheckboxOptions): Promise<T[] | undefined> {
   const selectedIndices: number[] = []
   const defaultSelected: number[] = []
   const possibleOptions: Option<T>[] = Array.isArray(options)
@@ -60,25 +89,47 @@ export default async function checkbox<T = string>(label: string, options: T[] |
 
   if (possibleOptions.length == 0) return []
   let cursorIndex = 0
+  let indexOffset = 0
+  let printedLines = 1
+  const windowSize = Math.min(possibleOptions.length, Math.max(1, checkboxOptions?.windowSize ?? possibleOptions.length))
+  const noMoreContentPattern = checkboxOptions?.noMoreContentPattern ?? '='
+  const moreContentPattern = checkboxOptions?.moreContentPattern ?? '-'
+  const longestItemLabelLength = Math.max(15, possibleOptions.map(it => it.label.length).sort((a, b) => b - a)[0] + 4)
+  const showNarrowWindow = windowSize < possibleOptions.length
+  const offsetWindowScroll = checkboxOptions?.offsetWindowScroll ?? true
   await print(HIDE_CURSOR)
 
   return createRenderer({
     label,
-    clear: () => print((CLEAR_LINE + moveCursor(1, 'up')).repeat(possibleOptions.length) + CLEAR_LINE),
+    clear: () => print((CLEAR_LINE + moveCursor(1, 'up')).repeat(printedLines - 1) + CLEAR_LINE),
     async prompt() {
-      await println(PREFIX + asPromptText(label))
-      for (let index = 0; index < possibleOptions.length; index++) {
-        const option = possibleOptions[index].label
-        const current = cursorIndex === index ? PRIMARY_COLOR + '>' : ' '
-        const selected = selectedIndices.includes(index) ? '☒' : '☐'
-        await print(`${current} ${selected} ${option}${RESET_COLOR}${index + 1 === possibleOptions.length ? '' : '\n'}`)
+      let out = PREFIX + asPromptText(label) + '\n'
+      if (showNarrowWindow) {
+        if (indexOffset !== 0) out += moreContentPattern.repeat(Math.ceil(longestItemLabelLength / moreContentPattern.length)).slice(0, longestItemLabelLength) + '\n'
+        else out += noMoreContentPattern.repeat(Math.ceil(longestItemLabelLength / noMoreContentPattern.length)).slice(0, longestItemLabelLength) + '\n'
       }
+
+      for (let index = 0; index < windowSize; index++) {
+        const option = possibleOptions[indexOffset + index].label
+        const current = cursorIndex === indexOffset + index ? PRIMARY_COLOR + '>' : ' '
+        const selected = selectedIndices.includes(indexOffset + index) ? '☒' : '☐'
+        out += `${current} ${selected} ${option}${RESET_COLOR}${index + 1 === windowSize ? '' : '\n'}`
+      }
+
+      if (showNarrowWindow) {
+        if (indexOffset + windowSize !== possibleOptions.length) out += '\n' + moreContentPattern.repeat(Math.ceil(longestItemLabelLength / moreContentPattern.length)).slice(0, longestItemLabelLength)
+        else out += '\n' + noMoreContentPattern.repeat(Math.ceil(longestItemLabelLength / noMoreContentPattern.length)).slice(0, longestItemLabelLength)
+      }
+      await print(out)
+      printedLines = windowSize + 1 + (showNarrowWindow ? 2 : 0)
     },
     actions: [
       [KeyCombo.parse('up'), async ({clear,prompt}) => {
         const newIndex = Math.min(Math.max(cursorIndex - 1, 0), possibleOptions.length - 1)
         if (newIndex === cursorIndex) return
         cursorIndex = newIndex
+        if (offsetWindowScroll && cursorIndex !== 0) indexOffset = cursorIndex - 1 < indexOffset ? cursorIndex - 1 : indexOffset
+        else indexOffset = cursorIndex < indexOffset ? cursorIndex : indexOffset
         await clear()
         await prompt()
       }],
@@ -86,6 +137,8 @@ export default async function checkbox<T = string>(label: string, options: T[] |
         const newIndex = Math.min(Math.max(cursorIndex + 1, 0), possibleOptions.length - 1)
         if (newIndex === cursorIndex) return
         cursorIndex = newIndex
+        if (offsetWindowScroll && cursorIndex !== possibleOptions.length - 1) indexOffset = cursorIndex >= indexOffset + windowSize - 2 ? cursorIndex - windowSize + 2 : indexOffset
+        else indexOffset = cursorIndex >= indexOffset + windowSize - 1 ? cursorIndex - windowSize + 1 : indexOffset
         await clear()
         await prompt()
       }],
@@ -93,6 +146,7 @@ export default async function checkbox<T = string>(label: string, options: T[] |
         const newIndex = 0
         if (newIndex === cursorIndex) return
         cursorIndex = newIndex
+        indexOffset = 0
         await clear()
         await prompt()
       }],
@@ -100,6 +154,7 @@ export default async function checkbox<T = string>(label: string, options: T[] |
         const newIndex = possibleOptions.length - 1
         if (newIndex === cursorIndex) return
         cursorIndex = newIndex
+        indexOffset = Math.max(0, newIndex - windowSize + 1)
         await clear()
         await prompt()
       }],
