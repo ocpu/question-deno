@@ -47,12 +47,12 @@ export default async function confirm(label: string, defaultValue?: boolean | Co
   const _defaultValue = typeof defaultValue === 'boolean' || typeof defaultValue === 'undefined' ? defaultValue : defaultValue.defaultValue
   const positiveChar = _defaultValue === true ? positiveText[0] : positiveText[0].toLowerCase()
   const negativeChar = _defaultValue === false ? negativeText[0] : negativeText[0].toLowerCase()
-  const prompt = label + ` [${positiveChar}/${negativeChar}]`
+  const prompt = createPromptText(label, defaultValue)
   let text = ''
   return createRenderer({
     label,
     clear: () => print(CLEAR_LINE),
-    prompt: () => print(PREFIX + asPromptText(prompt) + text + moveCursor(Math.abs(cursorIndex - text.length), 'left')),
+    prompt: () => print(prompt + text + moveCursor(Math.abs(cursorIndex - text.length), 'left')),
     actions: [
       [KeyCombos.parse('left'), async ({clear,prompt}) => {
         if (text.length === 0) return
@@ -125,4 +125,14 @@ export default async function confirm(label: string, defaultValue?: boolean | Co
       }
     }
   })
+}
+export function createPromptText(label: string, defaultValue?: boolean | ConfirmOptions | undefined) {
+  const _positiveText = typeof defaultValue === 'object' && typeof defaultValue.positiveText !== 'undefined' ? defaultValue.positiveText : 'Yes'
+  const _negativeText = typeof defaultValue === 'object' && typeof defaultValue.negativeText !== 'undefined' ? defaultValue.negativeText : 'No'
+  const positiveText = _positiveText.substring(0, 1).toUpperCase() + _positiveText.substring(1).toLowerCase()
+  const negativeText = _negativeText.substring(0, 1).toUpperCase() + _negativeText.substring(1).toLowerCase()
+  const _defaultValue = typeof defaultValue === 'boolean' || typeof defaultValue === 'undefined' ? defaultValue : defaultValue.defaultValue
+  const positiveChar = _defaultValue === true ? positiveText[0] : positiveText[0].toLowerCase()
+  const negativeChar = _defaultValue === false ? negativeText[0] : negativeText[0].toLowerCase()
+  return PREFIX + asPromptText(label + ` [${positiveChar}/${negativeChar}]`)
 }

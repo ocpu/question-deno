@@ -92,3 +92,7 @@ export default async function input(label: string, defaultValue?: string | undef
     }
   })
 }
+
+export function createPromptText(label: string, defaultValue?: string | undefined) {
+  return PREFIX + asPromptText(label) + (typeof defaultValue === 'string' ? '[' + defaultValue + '] ' : '')
+}

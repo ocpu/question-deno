@@ -8,6 +8,7 @@ export type { ConfirmOptions } from './confirm.ts'
 export type { CheckboxOptions, ObjectOption } from './checkbox.ts'
 export type { ListOptions } from './list.ts'
 
+import form, { Spec, SpecRes } from './form.ts'
 /**
  * Creates a list of selectable items from which one item can be chosen. If no items are available
  * to be selected this will return `undefined` without a question prompt.
@@ -185,6 +186,12 @@ export default function question(type: 'input', label: string, defaultValue?: st
  * @returns The answer text or `undefined` if canceled.
  */
 export default function question(type: 'password', label: string, substitute?: boolean | string | undefined): Promise<string | undefined>;
+/**
+ * 
+ * @param type The form type.
+ * @param elements The elements that should appear in the form.
+ */
+export default function question<T extends { [name: string]: Spec }>(type: 'form', elements: T): Promise<{ [K in keyof T]: SpecRes<T[K]> } | undefined>;
 export default function question(type: string, ...opts: any[]): Promise<any | undefined> {
   switch (type) {
     case 'list': return list(...(opts as Parameters<typeof list>))

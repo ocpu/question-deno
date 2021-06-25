@@ -26,13 +26,13 @@ import { print, println, PREFIX, asPromptText, CLEAR_LINE, highlightText, create
  */
 export default async function password(label: string, substitute?: boolean | string): Promise<string | undefined> {
   let cursorIndex = 0
-  const prompt = label
+  const prompt = createPromptText(label, substitute)
   const sub = substitute === false ? '' : substitute === true || substitute === undefined ? '*' : substitute
   let text = ''
   return createRenderer({
     label,
     clear: () => print(CLEAR_LINE),
-    prompt: () => print(PREFIX + asPromptText(prompt) + (sub.length === 0 ? '' : sub.repeat(Math.ceil(text.length / sub.length)).slice(0, text.length)) + moveCursor(sub.length === 0 ? 0 : Math.abs(cursorIndex - text.length), 'left')),
+    prompt: () => print(prompt + (sub.length === 0 ? '' : sub.repeat(Math.ceil(text.length / sub.length)).slice(0, text.length)) + moveCursor(sub.length === 0 ? 0 : Math.abs(cursorIndex - text.length), 'left')),
     actions: [
       [KeyCombos.parse('left'), async ({clear,prompt}) => {
         if (text.length === 0) return
@@ -94,4 +94,8 @@ export default async function password(label: string, substitute?: boolean | str
       }
     }
   })
+}
+
+export function createPromptText(label: string, substitute?: boolean | string) {
+  return PREFIX + asPromptText(label)
 }
