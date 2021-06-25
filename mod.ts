@@ -4,6 +4,10 @@ import list, { ListOptions } from './list.ts'
 import input from './input.ts'
 import password from './password.ts'
 
+export type { ConfirmOptions } from './confirm.ts'
+export type { CheckboxOptions, ObjectOption } from './checkbox.ts'
+export type { ListOptions } from './list.ts'
+
 /**
  * Creates a list of selectable items from which one item can be chosen. If no items are available
  * to be selected this will return `undefined` without a question prompt.
