@@ -1,4 +1,4 @@
-import KeyCombo from './KeyCombo.ts'
+import KeyCombo, { KeyCombos } from './KeyCombo.ts'
 import { Keypress, readKeypress } from 'https://deno.land/x/keypress@0.0.7/mod.ts'
 
 export const PRIMARY_COLOR = '\x1b[94m'
@@ -61,7 +61,7 @@ interface CreateRendererOptions<R> {
   label: string,
   prompt(): any|Promise<any>,
   clear(): any|Promise<any>,
-  actions:[KeyCombo|KeyCombo[],(options: CreateRendererOptions<R>)=>void|{result:R}|Promise<void|{result:R}>][],
+  actions:[KeyCombos,(options: CreateRendererOptions<R>)=>void|{result:R}|Promise<void|{result:R}>][],
   defaultAction?(keypress: Keypress, options: CreateRendererOptions<R>): void|{result:R}|Promise<void|{result:R}>
 }
 export async function createRenderer<R>(options: CreateRendererOptions<R>): Promise<R | undefined> {
@@ -80,7 +80,7 @@ export async function createRenderer<R>(options: CreateRendererOptions<R>): Prom
     }
 
     for (const [keyCombos, handler] of options.actions) {
-      if (Array.isArray(keyCombos) ? keyCombos.some(keyCombo => keyCombo.test(keypress)) : keyCombos.test(keypress)) {
+      if (keyCombos.test(keypress)) {
         const result = await handler(options)
         if (result === undefined) {
           continue keys

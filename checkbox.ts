@@ -1,4 +1,4 @@
-import KeyCombo from './KeyCombo.ts'
+import { KeyCombos } from './KeyCombo.ts'
 import { print, println, HIDE_CURSOR, SHOW_CURSOR, PREFIX, asPromptText, CLEAR_LINE, highlightText, createRenderer, PRIMARY_COLOR, RESET_COLOR, moveCursor } from './util.ts'
 
 interface Option<T> {
@@ -124,7 +124,7 @@ export default async function checkbox<T = string>(label: string, options: T[] |
       printedLines = windowSize + 1 + (showNarrowWindow ? 2 : 0)
     },
     actions: [
-      [KeyCombo.parse('up'), async ({clear,prompt}) => {
+      [KeyCombos.parse('up'), async ({clear,prompt}) => {
         const newIndex = Math.min(Math.max(cursorIndex - 1, 0), possibleOptions.length - 1)
         if (newIndex === cursorIndex) return
         cursorIndex = newIndex
@@ -133,7 +133,7 @@ export default async function checkbox<T = string>(label: string, options: T[] |
         await clear()
         await prompt()
       }],
-      [KeyCombo.parse('down'), async ({clear,prompt}) => {
+      [KeyCombos.parse('down'), async ({clear,prompt}) => {
         const newIndex = Math.min(Math.max(cursorIndex + 1, 0), possibleOptions.length - 1)
         if (newIndex === cursorIndex) return
         cursorIndex = newIndex
@@ -142,7 +142,7 @@ export default async function checkbox<T = string>(label: string, options: T[] |
         await clear()
         await prompt()
       }],
-      [KeyCombo.parse('home'), async ({clear,prompt}) => {
+      [KeyCombos.parse('home'), async ({clear,prompt}) => {
         const newIndex = 0
         if (newIndex === cursorIndex) return
         cursorIndex = newIndex
@@ -150,7 +150,7 @@ export default async function checkbox<T = string>(label: string, options: T[] |
         await clear()
         await prompt()
       }],
-      [KeyCombo.parse('end'), async ({clear,prompt}) => {
+      [KeyCombos.parse('end'), async ({clear,prompt}) => {
         const newIndex = possibleOptions.length - 1
         if (newIndex === cursorIndex) return
         cursorIndex = newIndex
@@ -158,13 +158,13 @@ export default async function checkbox<T = string>(label: string, options: T[] |
         await clear()
         await prompt()
       }],
-      [KeyCombo.parse('space'), async ({clear,prompt}) => {
+      [KeyCombos.parse('space'), async ({clear,prompt}) => {
         if (selectedIndices.includes(cursorIndex)) deselect(cursorIndex)
         else select(cursorIndex)
         await clear()
         await prompt()
       }],
-      [KeyCombo.parse('enter'), async ({clear}) => {
+      [KeyCombos.parse('enter'), async ({clear}) => {
         await clear()
         const result = selectedIndices.map(index => possibleOptions[index])
         const text = result.length === 0

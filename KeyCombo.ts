@@ -96,20 +96,12 @@ export default class KeyCombo {
     let shift = false
     let alt = false
     let meta = false
-    let key = ''
-
-    for (const part of str
+    const key = str
+      .replace(/\s*ctrl\s*(?:\+\s*|$)/i, () => (ctrl = true,''))
+      .replace(/\s*shift\s*(?:\+\s*|$)/i, () => (shift = true,''))
+      .replace(/\s*(?:alt|option)\s*(?:\+\s*|$)/i, () => (alt = true,''))
+      .replace(/\s*(?:meta|super|win|command|cmd)\s*(?:\+\s*|$)/i, () => (meta = true,''))
       .trim()
-      .split(/\s*\++\s*/g)
-      .filter(Boolean)) {
-      const lowerPart = part.toLowerCase()
-      if (lowerPart === 'ctrl') ctrl = true
-      else if (lowerPart === 'shift') shift = true
-      else if (lowerPart === 'alt' || lowerPart === 'option') alt = true
-      else if (lowerPart === 'meta' || lowerPart === 'super' || lowerPart === 'win' || lowerPart === 'command')
-        meta = true
-      else if (part) key = part
-    }
 
     return new KeyCombo({ ctrl, shift, alt, meta, key })
   }
@@ -197,5 +189,18 @@ export default class KeyCombo {
    */
   static from(event: Keypress): KeyCombo {
     return new KeyCombo({ ctrl: event.ctrlKey, shift: event.shiftKey, meta: event.metaKey, key: event.key })
+  }
+}
+
+export class KeyCombos {
+  constructor(private combos: readonly KeyCombo[]) {}
+
+  test(event: Keypress): boolean {
+    return this.combos.some(combo => combo.test(event))
+  }
+
+  static parse(str: string) {
+    const combos = str.split('|').map(KeyCombo.parse)
+    return new KeyCombos(combos)
   }
 }

@@ -1,4 +1,4 @@
-import KeyCombo from './KeyCombo.ts'
+import { KeyCombos } from './KeyCombo.ts'
 import { print, println, PREFIX, asPromptText, CLEAR_LINE, highlightText, createRenderer, moveCursor } from './util.ts'
 
 /**
@@ -34,7 +34,7 @@ export default async function password(label: string, substitute?: boolean | str
     clear: () => print(CLEAR_LINE),
     prompt: () => print(PREFIX + asPromptText(prompt) + (sub.length === 0 ? '' : sub.repeat(Math.ceil(text.length / sub.length)).slice(0, text.length)) + moveCursor(sub.length === 0 ? 0 : Math.abs(cursorIndex - text.length), 'left')),
     actions: [
-      [KeyCombo.parse('left'), async ({clear,prompt}) => {
+      [KeyCombos.parse('left'), async ({clear,prompt}) => {
         if (text.length === 0) return
         const newIndex = Math.min(Math.max(cursorIndex - 1, 0), text.length)
         if (newIndex === cursorIndex) return
@@ -42,7 +42,7 @@ export default async function password(label: string, substitute?: boolean | str
         await clear()
         await prompt()
       }],
-      [KeyCombo.parse('right'), async ({clear,prompt}) => {
+      [KeyCombos.parse('right'), async ({clear,prompt}) => {
         if (text.length === 0) return
         const newIndex = Math.min(Math.max(cursorIndex + 1, 0), text.length)
         if (newIndex === cursorIndex) return
@@ -50,21 +50,21 @@ export default async function password(label: string, substitute?: boolean | str
         await clear()
         await prompt()
       }],
-      [[KeyCombo.parse('up'), KeyCombo.parse('home')], async ({clear,prompt}) => {
+      [KeyCombos.parse('up|home'), async ({clear,prompt}) => {
         if (text.length === 0) return
         if (cursorIndex === 0) return
         cursorIndex = 0
         await clear()
         await prompt()
       }],
-      [[KeyCombo.parse('down'), KeyCombo.parse('end')], async ({clear,prompt}) => {
+      [KeyCombos.parse('down|end'), async ({clear,prompt}) => {
         if (text.length === 0) return
         if (cursorIndex === text.length) return
         cursorIndex = text.length
         await clear()
         await prompt()
       }],
-      [KeyCombo.parse('backspace'), async ({clear,prompt}) => {
+      [KeyCombos.parse('backspace'), async ({clear,prompt}) => {
         if (text.length === 0) return
         if (cursorIndex === 0) return
         text = text.slice(0, cursorIndex - 1) + text.slice(cursorIndex)
@@ -72,14 +72,14 @@ export default async function password(label: string, substitute?: boolean | str
         await clear()
         await prompt()
       }],
-      [KeyCombo.parse('delete'), async ({clear,prompt}) => {
+      [KeyCombos.parse('delete'), async ({clear,prompt}) => {
         if (text.length === 0) return
         if (cursorIndex === text.length) return
         text = text.slice(0, cursorIndex) + text.slice(cursorIndex + 1)
         await clear()
         await prompt()
       }],
-      [KeyCombo.parse('enter'), async ({clear}) => {
+      [KeyCombos.parse('enter'), async ({clear}) => {
         await clear()
         await println(PREFIX + asPromptText(label) + highlightText('<hidden>'))
         return { result: text }

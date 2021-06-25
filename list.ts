@@ -1,4 +1,4 @@
-import KeyCombo from './KeyCombo.ts'
+import { KeyCombos } from './KeyCombo.ts'
 import { print, println, HIDE_CURSOR, SHOW_CURSOR, PREFIX, asPromptText, CLEAR_LINE, highlightText, createRenderer, moveCursor } from './util.ts'
 
 export interface ListOptions {
@@ -88,7 +88,7 @@ export default async function list<T = string>(label: string, options: string[] 
       printedLines = windowSize + 1 + (showNarrowWindow ? 2 : 0)
     },
     actions: [
-      [KeyCombo.parse('up'), async ({clear,prompt}) => {
+      [KeyCombos.parse('up'), async ({clear,prompt}) => {
         const newIndex = Math.min(Math.max(selectedIndex - 1, 0), possibleOptions.length - 1)
         if (newIndex === selectedIndex) return
         selectedIndex = newIndex
@@ -97,7 +97,7 @@ export default async function list<T = string>(label: string, options: string[] 
         await clear()
         await prompt()
       }],
-      [KeyCombo.parse('down'), async ({clear,prompt}) => {
+      [KeyCombos.parse('down'), async ({clear,prompt}) => {
         const newIndex = Math.min(Math.max(selectedIndex + 1, 0), possibleOptions.length - 1)
         if (newIndex === selectedIndex) return
         selectedIndex = newIndex
@@ -106,7 +106,7 @@ export default async function list<T = string>(label: string, options: string[] 
         await clear()
         await prompt()
       }],
-      [KeyCombo.parse('enter'), async ({clear}) => {
+      [KeyCombos.parse('enter'), async ({clear}) => {
         await clear()
         await println(SHOW_CURSOR + PREFIX + asPromptText(label) + highlightText(possibleOptions[selectedIndex].label))
         return { result: possibleOptions[selectedIndex].value }
