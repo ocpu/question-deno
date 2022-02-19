@@ -1,5 +1,6 @@
 import { KeyCombos } from './KeyCombo.ts'
 import { print, println, HIDE_CURSOR, SHOW_CURSOR, PREFIX, asPromptText, CLEAR_LINE, highlightText, createRenderer, PRIMARY_COLOR, RESET_COLOR, moveCursor } from './util.ts'
+import config from './config.ts'
 
 interface Option<T> {
   label: string
@@ -91,43 +92,47 @@ export default async function checkbox<T = string>(label: string, options: T[] |
   let cursorIndex = 0
   let indexOffset = 0
   let printedLines = 1
-  const windowSize = Math.min(possibleOptions.length, Math.max(1, checkboxOptions?.windowSize ?? possibleOptions.length))
+  const desiredWindowSize = Math.min(possibleOptions.length, Math.max(1, checkboxOptions?.windowSize ?? possibleOptions.length))
   const noMoreContentPattern = checkboxOptions?.noMoreContentPattern ?? '='
   const moreContentPattern = checkboxOptions?.moreContentPattern ?? '-'
   const longestItemLabelLength = Math.max(15, possibleOptions.map(it => it.label.length).sort((a, b) => b - a)[0] + 4)
-  const showNarrowWindow = windowSize < possibleOptions.length
-  const offsetWindowScroll = checkboxOptions?.offsetWindowScroll ?? true
   await print(HIDE_CURSOR)
 
   return createRenderer({
     label,
     clear: () => print((CLEAR_LINE + moveCursor(1, 'up')).repeat(printedLines - 1) + CLEAR_LINE),
     async prompt() {
+      const actualWindowSize = Math.min(desiredWindowSize, Deno.consoleSize(config.writer.rid).rows - 3)
+      const showNarrowWindow = actualWindowSize < possibleOptions.length
+
       let out = PREFIX + asPromptText(label) + '\n'
       if (showNarrowWindow) {
         if (indexOffset !== 0) out += moreContentPattern.repeat(Math.ceil(longestItemLabelLength / moreContentPattern.length)).slice(0, longestItemLabelLength) + '\n'
         else out += noMoreContentPattern.repeat(Math.ceil(longestItemLabelLength / noMoreContentPattern.length)).slice(0, longestItemLabelLength) + '\n'
       }
 
-      for (let index = 0; index < windowSize; index++) {
+      for (let index = 0; index < actualWindowSize; index++) {
         const option = possibleOptions[indexOffset + index].label
         const current = cursorIndex === indexOffset + index ? PRIMARY_COLOR + '>' : ' '
         const selected = selectedIndices.includes(indexOffset + index) ? '☒' : '☐'
-        out += `${current} ${selected} ${option}${RESET_COLOR}${index + 1 === windowSize ? '' : '\n'}`
+        out += `${current} ${selected} ${option}${RESET_COLOR}${index + 1 === actualWindowSize ? '' : '\n'}`
       }
 
       if (showNarrowWindow) {
-        if (indexOffset + windowSize !== possibleOptions.length) out += '\n' + moreContentPattern.repeat(Math.ceil(longestItemLabelLength / moreContentPattern.length)).slice(0, longestItemLabelLength)
+        if (indexOffset + actualWindowSize !== possibleOptions.length) out += '\n' + moreContentPattern.repeat(Math.ceil(longestItemLabelLength / moreContentPattern.length)).slice(0, longestItemLabelLength)
         else out += '\n' + noMoreContentPattern.repeat(Math.ceil(longestItemLabelLength / noMoreContentPattern.length)).slice(0, longestItemLabelLength)
       }
       await print(out)
-      printedLines = windowSize + 1 + (showNarrowWindow ? 2 : 0)
+      printedLines = actualWindowSize + 1 + (showNarrowWindow ? 2 : 0)
     },
     actions: [
       [KeyCombos.parse('up'), async ({clear,prompt}) => {
         const newIndex = Math.min(Math.max(cursorIndex - 1, 0), possibleOptions.length - 1)
         if (newIndex === cursorIndex) return
         cursorIndex = newIndex
+        const actualWindowSize = Math.min(desiredWindowSize, Deno.consoleSize(config.writer.rid).rows - 3)
+        const offsetWindowScroll = actualWindowSize > 1 && (checkboxOptions?.offsetWindowScroll ?? true)
+        
         if (offsetWindowScroll && cursorIndex !== 0) indexOffset = cursorIndex - 1 < indexOffset ? cursorIndex - 1 : indexOffset
         else indexOffset = cursorIndex < indexOffset ? cursorIndex : indexOffset
         await clear()
@@ -137,8 +142,12 @@ export default async function checkbox<T = string>(label: string, options: T[] |
         const newIndex = Math.min(Math.max(cursorIndex + 1, 0), possibleOptions.length - 1)
         if (newIndex === cursorIndex) return
         cursorIndex = newIndex
-        if (offsetWindowScroll && cursorIndex !== possibleOptions.length - 1) indexOffset = cursorIndex >= indexOffset + windowSize - 2 ? cursorIndex - windowSize + 2 : indexOffset
-        else indexOffset = cursorIndex >= indexOffset + windowSize - 1 ? cursorIndex - windowSize + 1 : indexOffset
+        
+        const actualWindowSize = Math.min(desiredWindowSize, Deno.consoleSize(config.writer.rid).rows - 3)
+        const offsetWindowScroll = actualWindowSize > 1 && (checkboxOptions?.offsetWindowScroll ?? true)
+        
+        if (offsetWindowScroll && cursorIndex !== possibleOptions.length - 1) indexOffset = cursorIndex >= indexOffset + actualWindowSize - 2 ? cursorIndex - actualWindowSize + 2 : indexOffset
+        else indexOffset = cursorIndex >= indexOffset + actualWindowSize - 1 ? cursorIndex - actualWindowSize + 1 : indexOffset
         await clear()
         await prompt()
       }],
@@ -154,7 +163,8 @@ export default async function checkbox<T = string>(label: string, options: T[] |
         const newIndex = possibleOptions.length - 1
         if (newIndex === cursorIndex) return
         cursorIndex = newIndex
-        indexOffset = Math.max(0, newIndex - windowSize + 1)
+        const actualWindowSize = Math.min(desiredWindowSize, Deno.consoleSize(config.writer.rid).rows - 3)
+        indexOffset = Math.max(0, newIndex - actualWindowSize + 1)
         await clear()
         await prompt()
       }],

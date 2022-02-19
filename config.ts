@@ -1,6 +1,6 @@
 export type Config = {
   keypressReader: Deno.Reader & { rid: number },
-  writer: Deno.Writer,
+  writer: Deno.Writer & { rid: number },
 }
 
 const questionConfig: Config = {

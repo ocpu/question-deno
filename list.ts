@@ -1,5 +1,6 @@
 import { KeyCombos } from './KeyCombo.ts'
 import { print, println, HIDE_CURSOR, SHOW_CURSOR, PREFIX, asPromptText, CLEAR_LINE, highlightText, createRenderer, moveCursor } from './util.ts'
+import config from './config.ts'
 
 export interface ListOptions {
   /**
@@ -58,40 +59,45 @@ export default async function list<T = string>(label: string, options: string[] 
   let selectedIndex = 0
   let indexOffset = 0
   let printedLines = 1
-  const windowSize = Math.min(possibleOptions.length, Math.max(1, listOptions?.windowSize ?? possibleOptions.length))
+  const desiredWindowSize = Math.min(possibleOptions.length, Math.max(1, listOptions?.windowSize ?? possibleOptions.length))
   const noMoreContentPattern = listOptions?.noMoreContentPattern ?? '='
   const moreContentPattern = listOptions?.moreContentPattern ?? '-'
   const longestItemLabelLength = Math.max(15, possibleOptions.map(it => it.label.length).sort((a, b) => b - a)[0] + 4)
-  const showNarrowWindow = windowSize < possibleOptions.length
-  const offsetWindowScroll = listOptions?.offsetWindowScroll ?? true
   await print(HIDE_CURSOR)
   return createRenderer({
     label,
     clear: () => print((CLEAR_LINE + moveCursor(1, 'up')).repeat(printedLines - 1) + CLEAR_LINE),
     async prompt() {
+      const actualWindowSize = Math.min(desiredWindowSize, Deno.consoleSize(config.writer.rid).rows - 3)
+      const showNarrowWindow = actualWindowSize < possibleOptions.length
+
       let out = PREFIX + asPromptText(label) + '\n'
       if (showNarrowWindow) {
         if (indexOffset !== 0) out += moreContentPattern.repeat(Math.ceil(longestItemLabelLength / moreContentPattern.length)).slice(0, longestItemLabelLength) + '\n'
         else out += noMoreContentPattern.repeat(Math.ceil(longestItemLabelLength / noMoreContentPattern.length)).slice(0, longestItemLabelLength) + '\n'
       }
 
-      for (let index = 0; index < windowSize; index++) {
+      for (let index = 0; index < actualWindowSize; index++) {
         const option = possibleOptions[indexOffset + index].label
-        out += highlightText('  ' + option, { shouldHighlight: selectedIndex === indexOffset + index }) + (index + 1 === windowSize ? '' : '\n')
+        out += highlightText('  ' + option, { shouldHighlight: selectedIndex === indexOffset + index }) + (index + 1 === actualWindowSize ? '' : '\n')
       }
 
       if (showNarrowWindow) {
-        if (indexOffset + windowSize !== possibleOptions.length) out += '\n' + moreContentPattern.repeat(Math.ceil(longestItemLabelLength / moreContentPattern.length)).slice(0, longestItemLabelLength)
+        if (indexOffset + actualWindowSize !== possibleOptions.length) out += '\n' + moreContentPattern.repeat(Math.ceil(longestItemLabelLength / moreContentPattern.length)).slice(0, longestItemLabelLength)
         else out += '\n' + noMoreContentPattern.repeat(Math.ceil(longestItemLabelLength / noMoreContentPattern.length)).slice(0, longestItemLabelLength)
       }
       await print(out)
-      printedLines = windowSize + 1 + (showNarrowWindow ? 2 : 0)
+      printedLines = actualWindowSize + 1 + (showNarrowWindow ? 2 : 0)
     },
     actions: [
       [KeyCombos.parse('up'), async ({clear,prompt}) => {
         const newIndex = Math.min(Math.max(selectedIndex - 1, 0), possibleOptions.length - 1)
         if (newIndex === selectedIndex) return
         selectedIndex = newIndex
+        
+        const actualWindowSize = Math.min(desiredWindowSize, Deno.consoleSize(config.writer.rid).rows - 3)
+        const offsetWindowScroll = actualWindowSize > 1 && (listOptions?.offsetWindowScroll ?? true)
+        
         if (offsetWindowScroll && selectedIndex !== 0) indexOffset = selectedIndex - 1 < indexOffset ? selectedIndex - 1 : indexOffset
         else indexOffset = selectedIndex < indexOffset ? selectedIndex : indexOffset
         await clear()
@@ -101,8 +107,12 @@ export default async function list<T = string>(label: string, options: string[] 
         const newIndex = Math.min(Math.max(selectedIndex + 1, 0), possibleOptions.length - 1)
         if (newIndex === selectedIndex) return
         selectedIndex = newIndex
-        if (offsetWindowScroll && selectedIndex !== possibleOptions.length - 1) indexOffset = selectedIndex >= indexOffset + windowSize - 2 ? selectedIndex - windowSize + 2 : indexOffset
-        else indexOffset = selectedIndex >= indexOffset + windowSize - 1 ? selectedIndex - windowSize + 1 : indexOffset
+        
+        const actualWindowSize = Math.min(desiredWindowSize, Deno.consoleSize(config.writer.rid).rows - 3)
+        const offsetWindowScroll = actualWindowSize > 1 && (listOptions?.offsetWindowScroll ?? true)
+        
+        if (offsetWindowScroll && selectedIndex !== possibleOptions.length - 1) indexOffset = selectedIndex >= indexOffset + actualWindowSize - 2 ? selectedIndex - actualWindowSize + 2 : indexOffset
+        else indexOffset = selectedIndex >= indexOffset + actualWindowSize - 1 ? selectedIndex - actualWindowSize + 1 : indexOffset
         await clear()
         await prompt()
       }],
