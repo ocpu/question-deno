@@ -1,5 +1,6 @@
 import KeyCombo, { KeyCombos } from './KeyCombo.ts'
 import { Keypress, readKeypress } from 'https://deno.land/x/keypress@0.0.7/mod.ts'
+import questionConfig from './config.ts';
 
 export const PRIMARY_COLOR = '\x1b[94m'
 export const RESET_COLOR = '\x1b[0m'
@@ -69,7 +70,7 @@ export async function createRenderer<R>(options: CreateRendererOptions<R>): Prom
   const exitKeyCombo = KeyCombo.parse('Ctrl+d')
 
   options.prompt()
-  keys:for await (const keypress of readKeypress()) {
+  keys:for await (const keypress of readKeypress(questionConfig.keypressReader)) {
     if (cancelKeyCombo.test(keypress)) {
       await options.clear()
       await println(SHOW_CURSOR + PREFIX + asPromptText(options.label) + highlightText(`<cancel>`))
