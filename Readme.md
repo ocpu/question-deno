@@ -167,7 +167,7 @@ import question, { questionConfig as questionConfig } from 'https://raw.githubus
 
 try {
   // requires --allow-read on the file specified.
-  const tty = Deno.openSync("/dev/tty");
+  const tty = await Deno.open("/dev/tty");
   if (Deno.isatty(tty.rid)) {
     questionConfig.keypressReader = tty;
   }
@@ -183,9 +183,9 @@ import question, { questionConfig as questionConfig } from 'https://raw.githubus
 
 try {
   // requires --allow-write on the file specified.
-  const tty = Deno.openSync("/dev/tty", { write: true });
+  const tty = await Deno.open("/dev/tty", { write: true });
   if (Deno.isatty(tty.rid)) {
-    questionConfig.keypressReader = tty;
+    questionConfig.writer = tty;
   }
 } catch(e) {}
 

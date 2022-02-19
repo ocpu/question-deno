@@ -199,3 +199,71 @@ export default function question(type: string, ...opts: any[]): Promise<any | un
 }
 
 export { questionConfig };
+
+export interface ConfigureForUnixPipesOptions {
+  /** From where the input will be received. */
+  input: string
+  /** From where the prompts will output. */
+  output: string
+  /** How to handle the lack of permission to use any of the resources specified by `input` or `output`. Default panic. */
+  mode: 'fallback' | 'panic'
+  /** If the program lacks permission for a resource should we prompt for the use of that resource. Default true */
+  promptPermissionRequest: boolean
+}
+
+/**
+ * Will configure the output and input used by the prompts to not use stdin and stdout files.
+ * 
+ * If no options are specified it will choose /dev/tty as its file to output and input. If only one
+ * option is specified it will be used as its input AND output.
+ * 
+ * By default it will panic if the program does not get permission from the user to read or write to
+ * the files specified in the options. This can change to a fallback mode where if the program does
+ * not get permission it will use the default.
+ * 
+ * @param param0 The options to use when executing.
+ */
+export async function configureForUnixPipes({ input, output, mode, promptPermissionRequest }: Partial<ConfigureForUnixPipesOptions> = {}) {
+  const permissionMode = mode ?? 'panic'
+  if (input === undefined) {
+    input = output ?? '/dev/tty'
+  }
+  if (output === undefined || input === output) {
+    if (await hasResourcePermission(input, { read: true, write: true, prompt: promptPermissionRequest ?? true })) {
+      const resource = await Deno.open(input, { read: true, write: true })
+      questionConfig.keypressReader = resource
+      questionConfig.writer = resource
+    } else if (permissionMode === 'panic')  {
+      throw new Error(`Did not get permission to read and write from ` + input)
+    }
+  } else {
+    if (await hasResourcePermission(input, { read: true, write: false, prompt: promptPermissionRequest ?? true })) {
+      questionConfig.keypressReader = await Deno.open(input, { read: true })
+    } else {
+      throw new Error(`Did not get permission to read from ` + input)
+    }
+    if (await hasResourcePermission(output, { read: false, write: true, prompt: promptPermissionRequest ?? true })) {
+      questionConfig.writer = await Deno.open(output, { write: true })
+    } else if (permissionMode === 'panic') {
+      throw new Error(`Did not get permission to write from ` + output)
+    }
+  }
+}
+
+async function hasResourcePermission(file: string, { read, write, prompt }: { read: boolean, write: boolean, prompt: boolean }) {
+  if (read) {
+    const status = await Deno.permissions.query({ name: 'read', path: file })
+    if (status.state === 'prompt' && prompt) {
+      const newStatus = await Deno.permissions.request({ name: 'read', path: file })
+      if (newStatus.state !== 'granted') return false
+    } else if (status.state !== 'granted') return false
+  }
+  if (write) {
+    const status = await Deno.permissions.query({ name: 'write', path: file })
+    if (status.state === 'prompt' && prompt) {
+      const newStatus = await Deno.permissions.request({ name: 'write', path: file })
+      if (newStatus.state !== 'granted') return false
+    } else if (status.state !== 'granted') return false
+  }
+  return true
+}
