@@ -52,10 +52,10 @@ export function moveCursor(amount: number, direction: keyof typeof directionToSp
   return amount === 0 ? '' : `\x1b[${amount}${directionToSpecifier[direction]}`
 }
 const encoder = new TextEncoder()
-export function print(text: string, writer: Deno.Writer = Deno.stdout) {
+export function print(text: string, writer: Deno.Writer = questionConfig.writer) {
   return writer.write(encoder.encode(text))
 }
-export function println(text: string, writer: Deno.Writer = Deno.stdout) {
+export function println(text: string, writer: Deno.Writer = questionConfig.writer) {
   return writer.write(encoder.encode(text + '\n'))
 }
 interface CreateRendererOptions<R> {

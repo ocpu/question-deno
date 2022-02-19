@@ -150,7 +150,15 @@ Controls:
 - `Right` arrow will move the cursor one step to the right once if able.
 - `Enter` will return the test inputted or the provided default value.
 
-### Config
+## Config
+
+The project currently supports these configuration options:
+- [`keypressReader`](#config-option-keypressreader): A way of specifying from where the input characters will be read from. Default is `Deno.stdin`.
+- [`writer`](#config-option-writer): A way of specifying from where to output the option rendering. Default is `Deno.stdout`.
+
+These options mostly come in handy when you want use the program you are writing as a start, end, and/or in between step of linux pipes.
+
+### Config option `keypressReader`
 
 You can config keypress reader to prevent ["Keypress can be read only under TTY" error if you try to use piped input](https://github.com/ocpu/question-deno/issues/1) on Linux:
 
@@ -158,10 +166,27 @@ You can config keypress reader to prevent ["Keypress can be read only under TTY"
 import question, { questionConfig as questionConfig } from 'https://raw.githubusercontent.com/ocpu/question-deno/master/mod.ts'
 
 try {
-  // requires --allow-read Deno flag!
+  // requires --allow-read on the file specified.
   const tty = Deno.openSync("/dev/tty");
   if (Deno.isatty(tty.rid)) {
     questionConfig.keypressReader = tty;
   }
 } catch(e) {}
+```
+
+### Config option `writer`
+
+This config option lets you direct the output flow of the prompts supported by the library. It is most useful when you want your program to output something for a different program in a pipe chain.
+
+```typescript
+import question, { questionConfig as questionConfig } from 'https://raw.githubusercontent.com/ocpu/question-deno/master/mod.ts'
+
+try {
+  // requires --allow-write on the file specified.
+  const tty = Deno.openSync("/dev/tty", { write: true });
+  if (Deno.isatty(tty.rid)) {
+    questionConfig.keypressReader = tty;
+  }
+} catch(e) {}
+
 ```
