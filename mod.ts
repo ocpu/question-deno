@@ -3,7 +3,9 @@ import checkbox, { CheckboxOptions, ObjectOption } from './checkbox.ts'
 import list, { ListOptions } from './list.ts'
 import input from './input.ts'
 import password from './password.ts'
+import questionConfig from './config.ts';
 
+export type { Config } from './config.ts';
 export type { ConfirmOptions } from './confirm.ts'
 export type { CheckboxOptions, ObjectOption } from './checkbox.ts'
 export type { ListOptions } from './list.ts'
@@ -29,7 +31,7 @@ export default function question(type: 'list', label: string, options: string[],
 /**
  * Creates a list of selectable items from which one item can be chosen. If no items are available
  * to be selected this will return `undefined` without a question prompt.
- * 
+ *
  * The options parameter can also be a plain object where the key is the label and the value is the
  * result if that option was picked.
  *
@@ -69,7 +71,7 @@ export default function question(type: 'checkbox', label: string, options: strin
 /**
  * Creates a list of selectable items from which one item will be chosen. If no items are available
  * to be selected this will return `undefined` without a question prompt.
- * 
+ *
  * The options parameter is a plain object where the key is the label and the value is a
  * object definition how the option is represented in the list and with a value. The representation
  * keys are:
@@ -78,7 +80,7 @@ export default function question(type: 'checkbox', label: string, options: strin
  *   is too. Same for deselects.
  * - `selected`: This makes the option selected by default. If the option depends on any other options
  *   They will also be selected.
- * 
+ *
  * ```typescript
  * const options = {
  *   'Value 1': { value: 1 },
@@ -86,7 +88,7 @@ export default function question(type: 'checkbox', label: string, options: strin
  *   'Value 3': { value: 3 },
  * }
  * ```
- * 
+ *
  * ```typescript
  * const options = {
  *   'Value 1': { value: 1 },
@@ -195,3 +197,5 @@ export default function question(type: string, ...opts: any[]): Promise<any | un
     default: throw new Error(`Unsupported type: ${type}`)
   }
 }
+
+export { questionConfig };

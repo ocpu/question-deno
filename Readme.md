@@ -16,7 +16,9 @@ Each input type is documented in the overload list for the question function, it
 Test the different question types: `deno run --unstable https://raw.githubusercontent.com/ocpu/question-deno/master/demo.ts`
 
 ## Question Types
+
 Current question types:
+
 - [`input`](#input): Ask the user for a free form text answer.
 - [`confirm`](#confirm): Ask for a confirmation about an action.
 - [`list`](#list): Provide a list from which the user can chose one option.
@@ -30,6 +32,7 @@ A default value can be provided and if the free form text input is blank that va
 used instead.
 
 Controls:
+
 - `Ctrl+c` will have the question canceled and return `undefined`.
 - `Ctrl+d` will exit the whole script no questions asked with a `Deno.exit()`.
 - `Up` arrow or `Home` key will move the cursor to the start of the prompt text.
@@ -53,6 +56,7 @@ n is derived from the positive and negative labels. You can customize the labels
 options object The prompt can be canceled and will then return `undefined`.
 
 Controls:
+
 - `Ctrl+c` will have the question canceled and return `undefined`.
 - `Ctrl+d` will exit the whole script no questions asked with a `Deno.exit()`.
 - `Up` arrow or `Home` key will move the cursor to the start of the prompt text.
@@ -67,6 +71,7 @@ Creates a list of selectable items from which one item can be chosen. If no item
 to be selected this will return `undefined` without a question prompt.
 
 Controls:
+
 - `Ctrl+c` will have the question canceled and return `undefined`.
 - `Ctrl+d` will exit the whole script no questions asked with a `Deno.exit()`.
 - `Up` arrow will move the selected item up once if able.
@@ -93,6 +98,7 @@ Creates a list of selectable items from which one item will be chosen. If no ite
 to be selected this will return `undefined` without a question prompt.
 
 Controls:
+
 - `Ctrl+c` will have the question canceled and return `undefined`.
 - `Ctrl+d` will exit the whole script no questions asked with a `Deno.exit()`.
 - `Up` arrow will move the selected item up once if able.
@@ -105,6 +111,7 @@ The options can either be a list of strings or an object describing the differen
 If the options parameter is a plain object where the key is the label and the value is a
 object definition how the option is represented in the list and with a value. The representation
 keys are:
+
 - `dependencies`: This is a value that takes a index, label, or a list of indices and labels to
   express the reliance of a different option. So whenever any dependant option is select this one
   is too. Same for deselects.
@@ -134,6 +141,7 @@ in that pattern. So if you have a pattern of `<>` and that length of the text i 
 will look like `<><><`.
 
 Controls:
+
 - `Ctrl+c` will have the question canceled and return `undefined`.
 - `Ctrl+d` will exit the whole script no questions asked with a `Deno.exit()`.
 - `Up` arrow or `Home` key will move the cursor to the start of the prompt text.
@@ -141,3 +149,19 @@ Controls:
 - `Left` arrow will move the cursor one step to the left once if able.
 - `Right` arrow will move the cursor one step to the right once if able.
 - `Enter` will return the test inputted or the provided default value.
+
+### Config
+
+You can config keypress reader to prevent ["Keypress can be read only under TTY" error if you try to use piped input](https://github.com/ocpu/question-deno/issues/1) on Linux:
+
+```typescript
+import question, { questionConfig as questionConfig } from 'https://raw.githubusercontent.com/ocpu/question-deno/master/mod.ts'
+
+try {
+  // requires --allow-read Deno flag!
+  const tty = Deno.openSync("/dev/tty");
+  if (Deno.isatty(tty.rid)) {
+    questionConfig.keypressReader = tty;
+  }
+} catch(e) {}
+```
