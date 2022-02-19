@@ -69,7 +69,7 @@ export async function createRenderer<R>(options: CreateRendererOptions<R>): Prom
   const cancelKeyCombo = KeyCombo.parse('Ctrl+c')
   const exitKeyCombo = KeyCombo.parse('Ctrl+d')
 
-  options.prompt()
+  await options.prompt()
   keys:for await (const keypress of readKeypress(questionConfig.keypressReader)) {
     if (cancelKeyCombo.test(keypress)) {
       await options.clear()
