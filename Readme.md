@@ -15,6 +15,22 @@ Each input type is documented in the overload list for the question function, it
 
 Test the different question types: `deno run --unstable https://raw.githubusercontent.com/ocpu/question-deno/master/demo.ts`
 
+<details>
+<summary>TOC</summary>
+
+- [Question](#question)
+  - [Question Types](#question-types)
+    - [Input](#input)
+    - [Confirm](#confirm)
+    - [List](#list)
+    - [Checkbox](#checkbox)
+    - [Password](#password)
+  - [Config](#config)
+    - [Config option `keypressReader`](#config-option-keypressreader)
+    - [Config option `writer`](#config-option-writer)
+
+</details>
+
 ## Question Types
 
 Current question types:
