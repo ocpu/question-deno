@@ -100,6 +100,10 @@ Controls:
 
 The options can either be a list of strings or an object describing the different options.
 
+This control supports filtering by the label set by the option. To get started with the default configuration set the `filtering` list option to true. It will try to match the characters input with the label values.
+
+The filtering has support to be able to search by exact label value, highlight the sections on the label that is matching the string, only sort the options by the string instead to removing the non matching options, and sort the options by specificity rank or the specified manual sorting.
+
 ```typescript
 import question from 'https://raw.githubusercontent.com/ocpu/question-deno/master/mod.ts'
 
@@ -139,10 +143,13 @@ object definition how the option is represented in the list and with a value. Th
 keys are:
 
 - `dependencies`: This is a value that takes a index, label, or a list of indices and labels to
-  express the reliance of a different option. So whenever any dependant option is select this one
-  is too. Same for deselects.
+  express the reliance of a different option. So whenever any dependant option is select this one is too. Same for deselects.
 - `selected`: This makes the option selected by default. If the option depends on any other options
   They will also be selected.
+
+This control supports filtering by the label set by the option. To get started with the default configuration set the `filtering` checkbox option to true. It will try to match the characters input with the label values.
+
+The filtering has support to be able to search by exact label value, highlight the sections on the label that is matching the string, only sort the options by the string instead to removing the non matching options, and sort the options by specificity rank or the specified manual sorting.
 
 ```typescript
 import question from 'https://raw.githubusercontent.com/ocpu/question-deno/master/mod.ts'

@@ -33,13 +33,14 @@ const COLORS: { [C in Color]: number } = {
   lightCyan: 96,
 }
 export const PRIMARY_COLOR_NAME: Color = 'lightBlue'
-export function highlightText(text: string, { shouldHighlight = true, reset = true, color = PRIMARY_COLOR_NAME }: {shouldHighlight?: boolean, reset?: boolean, color?: Color } = {}) {
+export function highlightText(text: string, { shouldHighlight = true, reset = true, underline = false, color = PRIMARY_COLOR_NAME }: {shouldHighlight?: boolean, reset?: boolean, color?: Color, underline?: boolean } = {}) {
+  const extra = (shouldHighlight ? '' : '\x1b[') + (underline ? '4' : '') + (shouldHighlight ? ';' : 'm')
   if (shouldHighlight) {
-    if (reset) return '\x1b[' + COLORS[color] + 'm' + text + RESET_COLOR
-    return '\x1b[' + COLORS[color] + 'm' + text
+    if (reset) return '\x1b[' + extra + COLORS[color] + 'm' + text + RESET_COLOR
+    return '\x1b[' + extra + COLORS[color] + 'm' + text
   } else {
-    if (reset) return text + RESET_COLOR
-    return text
+    if (reset) return extra + text + RESET_COLOR
+    return extra + text
   }
 }
 const directionToSpecifier = {
@@ -84,7 +85,8 @@ export async function createRenderer<R>(options: CreateRendererOptions<R>): Prom
       await println(PREFIX + asPromptText(options.label) + highlightText(`<cancel>`))
       return undefined
     } else if (exitKeyCombo.test(keypress)) {
-      await print('\n')
+      await options.clear()
+      await println(PREFIX + asPromptText(options.label) + highlightText(`<force close>`))
       Deno.exit(0)
     }
 

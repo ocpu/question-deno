@@ -14,6 +14,14 @@ export type { ListOptions } from './list.ts'
  * Creates a list of selectable items from which one item can be chosen. If no items are available
  * to be selected this will return `undefined` without a question prompt.
  *
+ * This control supports filtering by the label set by the option. To get started with the default
+ * configuration set the `filtering` list option to true. It will try to match the characters
+ * input with the label values.
+ *
+ * The filtering has support to be able to search by exact label value, highlight the sections on
+ * the label that is matching the string, only sort the options by the string instead to removing
+ * the non matching options, and sort the options by specificity rank or the specified manual sorting.
+ *
  * Controls:
  * - `Ctrl+c` will have the question canceled and return `undefined`.
  * - `Ctrl+d` will exit the whole script no questions asked with a `Deno.exit()`.
@@ -39,6 +47,14 @@ export default function question(type: 'list', label: string, options: string[],
  * The options parameter can also be a plain object where the key is the label and the value is the
  * result if that option was picked.
  *
+ * This control supports filtering by the label set by the option. To get started with the default
+ * configuration set the `filtering` list option to true. It will try to match the characters
+ * input with the label values.
+ *
+ * The filtering has support to be able to search by exact label value, highlight the sections on
+ * the label that is matching the string, only sort the options by the string instead to removing
+ * the non matching options, and sort the options by specificity rank or the specified manual sorting.
+ *
  * Controls:
  * - `Ctrl+c` will have the question canceled and return `undefined`.
  * - `Ctrl+d` will exit the whole script no questions asked with a `Deno.exit()`.
@@ -60,6 +76,14 @@ export default function question<T>(type: 'list', label: string, options: Record
 /**
  * Creates a list of selectable items from which one item will be chosen. If no items are available
  * to be selected this will return `undefined` without a question prompt.
+ *
+ * This control supports filtering by the label set by the option. To get started with the default
+ * configuration set the `filtering` checkbox option to true. It will try to match the characters
+ * input with the label values.
+ *
+ * The filtering has support to be able to search by exact label value, highlight the sections on
+ * the label that is matching the string, only sort the options by the string instead to removing
+ * the non matching options, and sort the options by specificity rank or the specified manual sorting.
  *
  * Controls:
  * - `Ctrl+c` will have the question canceled and return `undefined`.
@@ -109,6 +133,14 @@ export default function question(type: 'checkbox', label: string, options: strin
  *   'Value 3': { value: 3, selected: true },
  * }
  * ```
+ *
+ * This control supports filtering by the label set by the option. To get started with the default
+ * configuration set the `filtering` checkbox option to true. It will try to match the characters
+ * input with the label values.
+ *
+ * The filtering has support to be able to search by exact label value, highlight the sections on
+ * the label that is matching the string, only sort the options by the string instead to removing
+ * the non matching options, and sort the options by specificity rank or the specified manual sorting.
  *
  * Controls:
  * - `Ctrl+c` will have the question canceled and return `undefined`.

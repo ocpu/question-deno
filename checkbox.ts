@@ -1,12 +1,15 @@
 import { KeyCombos } from './KeyCombo.ts'
 import { print, println, HIDE_CURSOR, SHOW_CURSOR, PREFIX, asPromptText, CLEAR_LINE, highlightText, createRenderer, PRIMARY_COLOR, RESET_COLOR, moveCursor } from './util.ts'
 import config from './config.ts'
+import { TextRange, textSearch } from "./text-util.ts";
 
 interface Option<T> {
+  id: string
   label: string
   value: T
-  onSelect?(): number[]
-  onDeselect?(index: number): boolean
+  onSelect?(): string[]
+  onDeselect?(id: string): boolean
+  matchingTextRanges: TextRange[]
 }
 
 const DEFAULT_NO_MORE_CONTENT_PATTERN = '='
@@ -22,19 +25,19 @@ const LINE_COLOR_UNSELECTED = '\x1b[90m'
 export interface CheckboxOptions {
   /**
    * The maximum amount of items visible at one time.
-   * 
+   *
    * Default: The amount of items passed in.
    */
   windowSize?: number
   /**
    * The pattern to repeat for when there are more items either above or below the current window.
-   * 
+   *
    * Default: `-`
    */
   moreContentPattern?: string
   /**
    * The pattern to repeat for when there are no additional items either above or below the current window.
-   * 
+   *
    * Default: `=`
    */
   noMoreContentPattern?: string
@@ -42,16 +45,65 @@ export interface CheckboxOptions {
    * Whether or not to offset the selected item while going through the item list.
    * If there are more items above or below (if enabled) it will select the next to last
    * or first of the window always leaving 1 item offset if more items are available.
-   * 
+   *
    * Default: `true`
    */
   offsetWindowScroll?: boolean
+  /**
+   * Should the options be able to be filtered.
+   *
+   * With filtering enabled any key the user is inputting will go into a search field. The list will
+   * then filter the options by their label.
+   *
+   * This option accepts an object for more granular control of the filtering and sorting of the results.
+   *
+   * Default: `false`
+   */
+  filtering?: Partial<TextFilteringOptions> | boolean
+}
+
+export interface TextFilteringOptions {
+  /**
+   * Specify how to sort the filtered list.
+   *
+   * - `none` specifies that the ordering should not change from what was specified by the option list.
+   * - `rank` specifies that the items will be sorted by the specificity of the matched values.
+   *   Higher match equals higher rank / further up the list.
+   *
+   * Default: `rank`
+   */
+  sorting: 'none' | 'rank'
+  /**
+   * Should the matching parts of the labels be highlighted.
+   *
+   * Default: `false`
+   */
+  highlight: boolean
+  /**
+   * Should the options that does not match still be in the list.
+   *
+   * Default: `true`
+   */
+  showOnlyMatching: boolean
+  /**
+   * When searching should the search string contents also match on letter casing.
+   *
+   * Default: `false`
+   */
+  matchCase: boolean
+}
+
+const DEFAULT_TEXT_FILTERING: TextFilteringOptions = {
+  sorting: 'rank',
+  highlight: false,
+  showOnlyMatching: true,
+  matchCase: false
 }
 
 /**
  * Creates a list of selectable items from which one item will be chosen. If no items are available
  * to be selected this will return `undefined` without a question prompt.
- * 
+ *
  * The options parameter can also be a plain object where the key is the label and the value is a
  * object definition how the option is represented in the list and with a value. The representation
  * keys are:
@@ -60,7 +112,7 @@ export interface CheckboxOptions {
  *   is too. Same for deselects.
  * - `selected`: This makes the option selected by default. If the option depends on any other options
  *   They will also be selected.
- * 
+ *
  * ```typescript
  * const options = {
  *   'Value 1': { value: 1 },
@@ -68,7 +120,7 @@ export interface CheckboxOptions {
  *   'Value 3': { value: 3 },
  * }
  * ```
- * 
+ *
  * ```typescript
  * const options = {
  *   'Value 1': { value: 1 },
@@ -76,6 +128,14 @@ export interface CheckboxOptions {
  *   'Value 3': { value: 3, selected: true },
  * }
  * ```
+ *
+ * This control supports filtering by the label set by the option. To get started with the default
+ * configuration set the `filtering` checkbox option to true. It will try to match the characters
+ * input with the label values.
+ *
+ * The filtering has support to be able to search by exact label value, highlight the sections on
+ * the label that is matching the string, only sort the options by the string instead to removing
+ * the non matching options, and sort the options by specificity rank or the specified manual sorting.
  *
  * Controls:
  * - `Ctrl+c` will have the question canceled and return `undefined`.
@@ -95,81 +155,114 @@ export interface CheckboxOptions {
  * @returns The marked options or `undefined` if canceled or empty.
  */
 export default async function checkbox<T = string>(label: string, options: T[] | Record<string, ObjectOption<T>>, checkboxOptions?: CheckboxOptions): Promise<T[] | undefined> {
-  const selectedIndices: number[] = []
-  const defaultSelected: number[] = []
+  const selectedIds: string[] = []
+  const defaultSelected: string[] = []
   const possibleOptions: Option<T>[] = Array.isArray(options)
     ? getOptionsFromArray(options, defaultSelected)
     : getOptionsFromObject(options, defaultSelected)
   defaultSelected.forEach(select)
 
   if (possibleOptions.length == 0) return []
+  let searchText = ''
+  let searchTextIndex = 0
   let cursorIndex = 0
   let indexOffset = 0
   let printedLines = 1
+  let visibleOptions = possibleOptions
+  const filteringOptions: TextFilteringOptions = Object.assign(
+    {},
+    DEFAULT_TEXT_FILTERING,
+    typeof checkboxOptions?.filtering === 'object'
+      ? checkboxOptions?.filtering ?? {}
+      : {}
+  )
+  const filteringEnabled = checkboxOptions?.filtering === true || typeof checkboxOptions?.filtering === 'object'
   const desiredWindowSize = Math.min(possibleOptions.length, Math.max(1, checkboxOptions?.windowSize ?? possibleOptions.length))
   const noMoreContentPattern = checkboxOptions?.noMoreContentPattern ?? DEFAULT_NO_MORE_CONTENT_PATTERN
   const moreContentPattern = checkboxOptions?.moreContentPattern ?? DEFAULT_MORE_CONTENT_PATTERN
   const longestItemLabelLength = Math.max(15, possibleOptions.map(it => it.label.length).sort((a, b) => b - a)[0] + 4)
-  await print(HIDE_CURSOR)
+  if (!filteringEnabled) await print(HIDE_CURSOR)
 
   return createRenderer({
     label,
-    onExit: () => print(SHOW_CURSOR),
-    clear: () => print((CLEAR_LINE + moveCursor(1, 'up')).repeat(printedLines - 1) + CLEAR_LINE),
+    onExit: () => !filteringEnabled ? print(SHOW_CURSOR) : void 0,
+    clear: () => {
+      if (filteringEnabled) {
+        return print(moveCursor(printedLines - 1, 'down') + (CLEAR_LINE + moveCursor(1, 'up')).repeat(printedLines - 1) + CLEAR_LINE)
+      } else {
+        return print((CLEAR_LINE + moveCursor(1, 'up')).repeat(printedLines - 1) + CLEAR_LINE)
+      }
+    },
     async prompt() {
       const actualWindowSize = Math.min(desiredWindowSize, Deno.consoleSize(config.writer.rid).rows - 3)
-      const showNarrowWindow = actualWindowSize < possibleOptions.length
+      const showNarrowWindow = actualWindowSize < visibleOptions.length
+      const len = Math.min(actualWindowSize, visibleOptions.length)
 
-      let out = PREFIX + asPromptText(label) + '\n'
+      let out = PREFIX + asPromptText(label)
+      if (filteringEnabled) {
+        out += `[${(visibleOptions.length+'').padStart((''+possibleOptions.length).length)}/${possibleOptions.length}] Search: ${searchText}`
+      }
+      const promptLineLength = out.length
+      out += '\n'
       if (showNarrowWindow) {
         if (indexOffset !== 0) out += moreContentPattern.repeat(Math.ceil(longestItemLabelLength / moreContentPattern.length)).slice(0, longestItemLabelLength) + '\n'
         else out += noMoreContentPattern.repeat(Math.ceil(longestItemLabelLength / noMoreContentPattern.length)).slice(0, longestItemLabelLength) + '\n'
       }
 
-      for (let index = 0; index < actualWindowSize; index++) {
-        const option = possibleOptions[indexOffset + index].label
+      for (let index = 0; index < len; index++) {
+        const option = visibleOptions[indexOffset + index]
         const lineColor =
           cursorIndex === indexOffset + index ? LINE_COLOR_CURSOR :
-          selectedIndices.includes(indexOffset + index) ? LINE_COLOR_SELECTED :
+          selectedIds.includes(option.id) ? LINE_COLOR_SELECTED :
           LINE_COLOR_UNSELECTED
         const current = cursorIndex === indexOffset + index
           ? CURSOR_CHARACTER
           : NON_CURSOR_CHARACTER
-        const selected = selectedIndices.includes(indexOffset + index)
+        const selected = selectedIds.includes(option.id)
           ? SELECTED_OPTION_CHARACTER
           : UNSELECTED_OPTION_CHARACTER
-        out += `${lineColor}${current} ${selected} ${option}${RESET_COLOR}${index + 1 === actualWindowSize ? '' : '\n'}`
+        let label = option.label
+        if (filteringEnabled && filteringOptions.highlight)
+        for (const match of option.matchingTextRanges.reverse()) {
+          const before = label.slice(0, match.start)
+          const after = label.slice(match.end)
+          label = before + highlightText(label.slice(match.start, match.end), { underline: true, shouldHighlight: false }) + lineColor + after
+        }
+        out += `${lineColor}${current} ${selected} ${label}${RESET_COLOR}${index + 1 === len ? '' : '\n'}`
       }
 
       if (showNarrowWindow) {
-        if (indexOffset + actualWindowSize !== possibleOptions.length) out += '\n' + moreContentPattern.repeat(Math.ceil(longestItemLabelLength / moreContentPattern.length)).slice(0, longestItemLabelLength)
+        if (indexOffset + actualWindowSize !== visibleOptions.length) out += '\n' + moreContentPattern.repeat(Math.ceil(longestItemLabelLength / moreContentPattern.length)).slice(0, longestItemLabelLength)
         else out += '\n' + noMoreContentPattern.repeat(Math.ceil(longestItemLabelLength / noMoreContentPattern.length)).slice(0, longestItemLabelLength)
       }
+      printedLines = len + 1 + (showNarrowWindow ? 2 : 0)
+      if (filteringEnabled) {
+        out += moveCursor(len > 0 ? printedLines - 1 : 1, 'up') + moveCursor(500, 'left') + moveCursor(promptLineLength + 3 - longestItemLabelLength - searchText.length + searchTextIndex, 'right')
+      }
       await print(out)
-      printedLines = actualWindowSize + 1 + (showNarrowWindow ? 2 : 0)
     },
     actions: [
       [KeyCombos.parse('up'), async ({clear,prompt}) => {
-        const newIndex = Math.min(Math.max(cursorIndex - 1, 0), possibleOptions.length - 1)
+        const newIndex = Math.min(Math.max(cursorIndex - 1, 0), visibleOptions.length - 1)
         if (newIndex === cursorIndex) return
         cursorIndex = newIndex
         const actualWindowSize = Math.min(desiredWindowSize, Deno.consoleSize(config.writer.rid).rows - 3)
         const offsetWindowScroll = actualWindowSize > 1 && (checkboxOptions?.offsetWindowScroll ?? true)
-        
+
         if (offsetWindowScroll && cursorIndex !== 0) indexOffset = cursorIndex - 1 < indexOffset ? cursorIndex - 1 : indexOffset
         else indexOffset = cursorIndex < indexOffset ? cursorIndex : indexOffset
         await clear()
         await prompt()
       }],
       [KeyCombos.parse('down'), async ({clear,prompt}) => {
-        const newIndex = Math.min(Math.max(cursorIndex + 1, 0), possibleOptions.length - 1)
+        const newIndex = Math.min(Math.max(cursorIndex + 1, 0), visibleOptions.length - 1)
         if (newIndex === cursorIndex) return
         cursorIndex = newIndex
-        
+
         const actualWindowSize = Math.min(desiredWindowSize, Deno.consoleSize(config.writer.rid).rows - 3)
         const offsetWindowScroll = actualWindowSize > 1 && (checkboxOptions?.offsetWindowScroll ?? true)
-        
-        if (offsetWindowScroll && cursorIndex !== possibleOptions.length - 1) indexOffset = cursorIndex >= indexOffset + actualWindowSize - 2 ? cursorIndex - actualWindowSize + 2 : indexOffset
+
+        if (offsetWindowScroll && cursorIndex !== visibleOptions.length - 1) indexOffset = cursorIndex >= indexOffset + actualWindowSize - 2 ? cursorIndex - actualWindowSize + 2 : indexOffset
         else indexOffset = cursorIndex >= indexOffset + actualWindowSize - 1 ? cursorIndex - actualWindowSize + 1 : indexOffset
         await clear()
         await prompt()
@@ -183,7 +276,7 @@ export default async function checkbox<T = string>(label: string, options: T[] |
         await prompt()
       }],
       [KeyCombos.parse('end'), async ({clear,prompt}) => {
-        const newIndex = possibleOptions.length - 1
+        const newIndex = visibleOptions.length - 1
         if (newIndex === cursorIndex) return
         cursorIndex = newIndex
         const actualWindowSize = Math.min(desiredWindowSize, Deno.consoleSize(config.writer.rid).rows - 3)
@@ -205,68 +298,141 @@ export default async function checkbox<T = string>(label: string, options: T[] |
         const actualWindowSize = Math.min(desiredWindowSize, Deno.consoleSize(config.writer.rid).rows - 3)
         const offsetWindowScroll = actualWindowSize > 1 && (checkboxOptions?.offsetWindowScroll ?? true)
 
-        const newIndex = Math.min(possibleOptions.length - 1, cursorIndex + actualWindowSize)
+        const newIndex = Math.min(visibleOptions.length - 1, cursorIndex + actualWindowSize)
         if (newIndex === cursorIndex) return
 
         cursorIndex = newIndex
-        indexOffset = Math.min(possibleOptions.length - actualWindowSize - 1, newIndex)
-        if (indexOffset === possibleOptions.length - actualWindowSize - 1 && offsetWindowScroll) {
+        indexOffset = Math.min(visibleOptions.length - actualWindowSize - 1, newIndex)
+        if (indexOffset === visibleOptions.length - actualWindowSize - 1 && offsetWindowScroll) {
           indexOffset += 1
         }
         await clear()
         await prompt()
       }],
       [KeyCombos.parse('Ctrl+a'), async ({clear,prompt}) => {
-        if (selectedIndices.length === possibleOptions.length) {
-          selectedIndices.splice(0, selectedIndices.length)
+        if (visibleOptions.every(option => selectedIds.includes(option.id))) {
+          for (const option of visibleOptions) {
+            selectedIds.splice(selectedIds.indexOf(option.id), 1)
+          }
         } else {
-          selectedIndices.splice(0, selectedIndices.length, ...Array.from(possibleOptions, (_, i) => i))
+          visibleOptions
+            .filter(option => !selectedIds.includes(option.id))
+            .forEach(option => selectedIds.push(option.id))
         }
         await clear()
         await prompt()
       }],
       [KeyCombos.parse('space'), async ({clear,prompt}) => {
-        if (selectedIndices.includes(cursorIndex)) deselect(cursorIndex)
-        else select(cursorIndex)
+        const option = visibleOptions[cursorIndex]
+        if (selectedIds.includes(option.id)) deselect(option.id)
+        else select(option.id)
         await clear()
         await prompt()
       }],
       [KeyCombos.parse('enter'), async ({clear}) => {
         await clear()
-        const result = selectedIndices.map(index => possibleOptions[index])
+        const result = selectedIds.map(id => possibleOptions.find(option => option.id === id)!)
         const text = result.length === 0
           ? highlightText('<empty>')
           : result.map(item => highlightText(item.label)).join(', ')
         await println(PREFIX + asPromptText(label) + text)
         return { result: result.map(it => it.value) }
-      }]
-    ]
+      }],
+      // Search Input
+      [KeyCombos.parse('left'), async ({clear,prompt}) => {
+        if (!filteringEnabled) return
+        if (searchText.length === 0) return
+        const newIndex = Math.min(Math.max(searchTextIndex - 1, 0), searchText.length)
+        if (newIndex === searchTextIndex) return
+        searchTextIndex = newIndex
+        await clear()
+        updateOptions()
+        await prompt()
+      }],
+      [KeyCombos.parse('right'), async ({clear,prompt}) => {
+        if (!filteringEnabled) return
+        if (searchText.length === 0) return
+        const newIndex = Math.min(Math.max(searchTextIndex + 1, 0), searchText.length)
+        if (newIndex === searchTextIndex) return
+        searchTextIndex = newIndex
+        await clear()
+        updateOptions()
+        await prompt()
+      }],
+      [KeyCombos.parse('backspace'), async ({clear,prompt}) => {
+        if (!filteringEnabled) return
+        if (searchText.length === 0) return
+        if (searchTextIndex === 0) return
+        searchText = searchText.slice(0, searchTextIndex - 1) + searchText.slice(searchTextIndex)
+        searchTextIndex--
+        await clear()
+        updateOptions()
+        await prompt()
+      }],
+      [KeyCombos.parse('delete'), async ({clear,prompt}) => {
+        if (!filteringEnabled) return
+        if (searchText.length === 0) return
+        if (searchTextIndex === searchText.length) return
+        searchText = searchText.slice(0, searchTextIndex) + searchText.slice(searchTextIndex + 1)
+        await clear()
+        updateOptions()
+        await prompt()
+      }],
+    ],
+    async defaultAction(keypress, options) {
+      if (filteringEnabled && !keypress.ctrlKey && !keypress.metaKey && keypress.keyCode !== undefined) {
+        searchText = searchText.slice(0, searchTextIndex) + keypress.sequence + searchText.slice(searchTextIndex)
+        searchTextIndex++
+        await options.clear()
+        updateOptions()
+        await options.prompt()
+      }
+    }
   })
 
-  function select(index: number) {
-    selectedIndices.push(index)
+  function updateOptions() {
+    cursorIndex = 0
+    indexOffset = 0
+    if (searchText.trim() === '') return visibleOptions = possibleOptions
+    const results = textSearch(searchText, possibleOptions, {
+      transformer: item => item.label,
+      matchCase: filteringOptions.matchCase
+    })
+    const intermediate = filteringOptions.sorting === 'rank'
+      ? results.slice().sort((a, b) => b.specificityScore - a.specificityScore)
+      : results
+
+    const finalList = filteringOptions.showOnlyMatching
+      ? intermediate.filter(result => result.specificityScore > 0)
+      : intermediate
+
+    visibleOptions = finalList.map(result => Object.assign({}, result.item, { matchingTextRanges: result.matches }))
+  }
+
+  function select(id: string) {
+    selectedIds.push(id)
     let onSelect: Option<T>['onSelect'] | undefined
-    if (typeof (onSelect = possibleOptions[index].onSelect) === 'function') {
-      for (const other of onSelect().filter(index => !selectedIndices.includes(index))) {
-        if (selectedIndices.includes(other)) continue
+    if (typeof (onSelect = possibleOptions.find(it => it.id === id)?.onSelect) === 'function') {
+      for (const other of onSelect().filter(id => !selectedIds.includes(id))) {
+        if (selectedIds.includes(other)) continue
         select(other)
       }
     }
   }
 
-  function deselect(index: number) {
-    selectedIndices.splice(selectedIndices.indexOf(index), 1)
-    for (const selectedIndex of selectedIndices.slice()) {
+  function deselect(id: string) {
+    selectedIds.splice(selectedIds.indexOf(id), 1)
+    for (const selectedIndex of selectedIds.slice()) {
       let onDeselect: Option<T>['onDeselect'] | undefined
-      if (typeof (onDeselect = possibleOptions[selectedIndex].onDeselect) === 'function') {
-        if (onDeselect(index)) deselect(selectedIndex)
+      if (typeof (onDeselect = possibleOptions.find(it => it.id === id)?.onDeselect) === 'function') {
+        if (onDeselect(id)) deselect(selectedIndex)
       }
     }
   }
 }
 
-function getOptionsFromArray<T>(options: T[], _defaultSelected: number[]): Option<T>[] {
-  return options.map(value => ({ label: value as unknown as string, value }))
+function getOptionsFromArray<T>(options: T[], _defaultSelected: string[]): Option<T>[] {
+  return options.map((value, index) => ({ label: value as unknown as string, value, id: '' + index, matchingTextRanges: [] }))
 }
 
 export interface ObjectOption<T> {
@@ -275,9 +441,9 @@ export interface ObjectOption<T> {
   selected?: boolean
 }
 
-function getOptionsFromObject<T>(object: Record<string, ObjectOption<T>>, defaultSelected: number[]): Option<T>[] {
+function getOptionsFromObject<T>(object: Record<string, ObjectOption<T>>, defaultSelected: string[]): Option<T>[] {
   return Object.entries(object).map(([label, objectOption], index, allEntries) => {
-    const option: Option<T> = { label, value: objectOption.value }
+    const option: Option<T> = { label, value: objectOption.value, id: '' + index, matchingTextRanges: [] }
     if (typeof objectOption.dependencies !== 'undefined') {
       const dependencies: number[] = []
       if (typeof objectOption.dependencies === 'string') dependencies.push(allEntries.findIndex(([label]) => label === objectOption.dependencies))
@@ -288,11 +454,11 @@ function getOptionsFromObject<T>(object: Record<string, ObjectOption<T>>, defaul
           else dependencies.push(dep)
         }
       }
-      const deps = dependencies.filter(it => it >= 0 && it < allEntries.length)
+      const deps = dependencies.filter(it => it >= 0 && it < allEntries.length).map(index => index + '')
       option.onSelect = () => deps
-      option.onDeselect = index => deps.includes(index)
+      option.onDeselect = id => deps.includes(id)
     }
-    if (objectOption.selected === true) defaultSelected.push(index)
+    if (objectOption.selected === true) defaultSelected.push(''+index)
 
     return option
   })
