@@ -1,5 +1,5 @@
 import { KeyCombos } from './KeyCombo.ts'
-import { print, println, HIDE_CURSOR, SHOW_CURSOR, PREFIX, asPromptText, CLEAR_LINE, highlightText, createRenderer, moveCursor } from './util.ts'
+import { print, println, HIDE_CURSOR, SHOW_CURSOR, PREFIX, asPromptText, CLEAR_LINE, highlightText, createRenderer, moveCursor, PRIMARY_COLOR, RESET_COLOR } from './util.ts'
 import config from './config.ts'
 
 export interface ListOptions {
@@ -30,6 +30,13 @@ export interface ListOptions {
    */
   offsetWindowScroll?: boolean
 }
+
+const DEFAULT_NO_MORE_CONTENT_PATTERN = '='
+const DEFAULT_MORE_CONTENT_PATTERN = '-'
+const CURSOR_CHARACTER = '>'
+const NON_CURSOR_CHARACTER = ' '
+const LINE_COLOR_CURSOR = PRIMARY_COLOR
+const LINE_COLOR_UNSELECTED = '\x1b[90m'
 
 /**
  * Creates a list of selectable items from which one item can be chosen. If no items are available
@@ -64,8 +71,8 @@ export default async function list<T = string>(label: string, options: string[] 
   let indexOffset = 0
   let printedLines = 1
   const desiredWindowSize = Math.min(possibleOptions.length, Math.max(1, listOptions?.windowSize ?? possibleOptions.length))
-  const noMoreContentPattern = listOptions?.noMoreContentPattern ?? '='
-  const moreContentPattern = listOptions?.moreContentPattern ?? '-'
+  const noMoreContentPattern = listOptions?.noMoreContentPattern ?? DEFAULT_NO_MORE_CONTENT_PATTERN
+  const moreContentPattern = listOptions?.moreContentPattern ?? DEFAULT_MORE_CONTENT_PATTERN
   const longestItemLabelLength = Math.max(15, possibleOptions.map(it => it.label.length).sort((a, b) => b - a)[0] + 4)
   await print(HIDE_CURSOR)
   return createRenderer({
@@ -84,7 +91,11 @@ export default async function list<T = string>(label: string, options: string[] 
 
       for (let index = 0; index < actualWindowSize; index++) {
         const option = possibleOptions[indexOffset + index].label
-        out += highlightText('  ' + option, { shouldHighlight: selectedIndex === indexOffset + index }) + (index + 1 === actualWindowSize ? '' : '\n')
+        const lineColor = selectedIndex === indexOffset + index ? LINE_COLOR_CURSOR : LINE_COLOR_UNSELECTED
+        const current = selectedIndex === indexOffset + index
+          ? CURSOR_CHARACTER
+          : NON_CURSOR_CHARACTER
+        out += `${lineColor}${current} ${option}${RESET_COLOR}${index + 1 === actualWindowSize ? '' : '\n'}`
       }
 
       if (showNarrowWindow) {

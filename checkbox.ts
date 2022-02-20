@@ -9,6 +9,16 @@ interface Option<T> {
   onDeselect?(index: number): boolean
 }
 
+const DEFAULT_NO_MORE_CONTENT_PATTERN = '='
+const DEFAULT_MORE_CONTENT_PATTERN = '-'
+const SELECTED_OPTION_CHARACTER = '☒'
+const UNSELECTED_OPTION_CHARACTER = '☐'
+const CURSOR_CHARACTER = '>'
+const NON_CURSOR_CHARACTER = ' '
+const LINE_COLOR_CURSOR = PRIMARY_COLOR
+const LINE_COLOR_SELECTED = '\x1b[0m'
+const LINE_COLOR_UNSELECTED = '\x1b[90m'
+
 export interface CheckboxOptions {
   /**
    * The maximum amount of items visible at one time.
@@ -97,8 +107,8 @@ export default async function checkbox<T = string>(label: string, options: T[] |
   let indexOffset = 0
   let printedLines = 1
   const desiredWindowSize = Math.min(possibleOptions.length, Math.max(1, checkboxOptions?.windowSize ?? possibleOptions.length))
-  const noMoreContentPattern = checkboxOptions?.noMoreContentPattern ?? '='
-  const moreContentPattern = checkboxOptions?.moreContentPattern ?? '-'
+  const noMoreContentPattern = checkboxOptions?.noMoreContentPattern ?? DEFAULT_NO_MORE_CONTENT_PATTERN
+  const moreContentPattern = checkboxOptions?.moreContentPattern ?? DEFAULT_MORE_CONTENT_PATTERN
   const longestItemLabelLength = Math.max(15, possibleOptions.map(it => it.label.length).sort((a, b) => b - a)[0] + 4)
   await print(HIDE_CURSOR)
 
@@ -118,9 +128,17 @@ export default async function checkbox<T = string>(label: string, options: T[] |
 
       for (let index = 0; index < actualWindowSize; index++) {
         const option = possibleOptions[indexOffset + index].label
-        const current = cursorIndex === indexOffset + index ? PRIMARY_COLOR + '>' : ' '
-        const selected = selectedIndices.includes(indexOffset + index) ? '☒' : '☐'
-        out += `${current} ${selected} ${option}${RESET_COLOR}${index + 1 === actualWindowSize ? '' : '\n'}`
+        const lineColor =
+          cursorIndex === indexOffset + index ? LINE_COLOR_CURSOR :
+          selectedIndices.includes(indexOffset + index) ? LINE_COLOR_SELECTED :
+          LINE_COLOR_UNSELECTED
+        const current = cursorIndex === indexOffset + index
+          ? CURSOR_CHARACTER
+          : NON_CURSOR_CHARACTER
+        const selected = selectedIndices.includes(indexOffset + index)
+          ? SELECTED_OPTION_CHARACTER
+          : UNSELECTED_OPTION_CHARACTER
+        out += `${lineColor}${current} ${selected} ${option}${RESET_COLOR}${index + 1 === actualWindowSize ? '' : '\n'}`
       }
 
       if (showNarrowWindow) {
