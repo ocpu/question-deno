@@ -104,6 +104,7 @@ export default async function checkbox<T = string>(label: string, options: T[] |
 
   return createRenderer({
     label,
+    onExit: () => print(SHOW_CURSOR),
     clear: () => print((CLEAR_LINE + moveCursor(1, 'up')).repeat(printedLines - 1) + CLEAR_LINE),
     async prompt() {
       const actualWindowSize = Math.min(desiredWindowSize, Deno.consoleSize(config.writer.rid).rows - 3)
@@ -218,7 +219,7 @@ export default async function checkbox<T = string>(label: string, options: T[] |
         const text = result.length === 0
           ? highlightText('<empty>')
           : result.map(item => highlightText(item.label)).join(', ')
-        await println(SHOW_CURSOR + PREFIX + asPromptText(label) + text)
+        await println(PREFIX + asPromptText(label) + text)
         return { result: result.map(it => it.value) }
       }]
     ]

@@ -70,6 +70,7 @@ export default async function list<T = string>(label: string, options: string[] 
   await print(HIDE_CURSOR)
   return createRenderer({
     label,
+    onExit: () => print(SHOW_CURSOR),
     clear: () => print((CLEAR_LINE + moveCursor(1, 'up')).repeat(printedLines - 1) + CLEAR_LINE),
     async prompt() {
       const actualWindowSize = Math.min(desiredWindowSize, Deno.consoleSize(config.writer.rid).rows - 3)
@@ -164,7 +165,7 @@ export default async function list<T = string>(label: string, options: string[] 
       }],
       [KeyCombos.parse('enter'), async ({clear}) => {
         await clear()
-        await println(SHOW_CURSOR + PREFIX + asPromptText(label) + highlightText(possibleOptions[selectedIndex].label))
+        await println(PREFIX + asPromptText(label) + highlightText(possibleOptions[selectedIndex].label))
         return { result: possibleOptions[selectedIndex].value }
       }]
     ]

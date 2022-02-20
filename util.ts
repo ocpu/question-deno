@@ -59,24 +59,32 @@ export function println(text: string, writer: Deno.Writer = questionConfig.write
   return writer.write(encoder.encode(text + '\n'))
 }
 interface CreateRendererOptions<R> {
-  label: string,
-  prompt(): any|Promise<any>,
-  clear(): any|Promise<any>,
-  actions:[KeyCombos,(options: CreateRendererOptions<R>)=>void|{result:R}|Promise<void|{result:R}>][],
+  label: string
+  prompt(): any|Promise<any>
+  clear(): any|Promise<any>
+  actions:[KeyCombos,(options: CreateRendererOptions<R>)=>void|{result:R}|Promise<void|{result:R}>][]
   defaultAction?(keypress: Keypress, options: CreateRendererOptions<R>): void|{result:R}|Promise<void|{result:R}>
+  onExit?(): any|Promise<any>
 }
 export async function createRenderer<R>(options: CreateRendererOptions<R>): Promise<R | undefined> {
   const cancelKeyCombo = KeyCombo.parse('Ctrl+c')
   const exitKeyCombo = KeyCombo.parse('Ctrl+d')
 
+  if (options.onExit) {
+    window.addEventListener('unload', options.onExit)
+  }
   await options.prompt()
   keys:for await (const keypress of readKeypress(questionConfig.keypressReader)) {
     if (cancelKeyCombo.test(keypress)) {
       await options.clear()
-      await println(SHOW_CURSOR + PREFIX + asPromptText(options.label) + highlightText(`<cancel>`))
+      if (options.onExit) {
+        await options.onExit()
+        window.removeEventListener('unload', options.onExit)
+      }
+      await println(PREFIX + asPromptText(options.label) + highlightText(`<cancel>`))
       return undefined
     } else if (exitKeyCombo.test(keypress)) {
-      await println(SHOW_CURSOR)
+      await print('\n')
       Deno.exit(0)
     }
 
@@ -86,6 +94,10 @@ export async function createRenderer<R>(options: CreateRendererOptions<R>): Prom
         if (result === undefined) {
           continue keys
         } else {
+          if (options.onExit) {
+            await options.onExit()
+            window.removeEventListener('unload', options.onExit)
+          }
           return result.result
         }
       }
@@ -95,6 +107,10 @@ export async function createRenderer<R>(options: CreateRendererOptions<R>): Prom
       if (result === undefined) {
         continue keys
       } else {
+        if (options.onExit) {
+          await options.onExit()
+          window.removeEventListener('unload', options.onExit)
+        }
         return result.result
       }
     }
