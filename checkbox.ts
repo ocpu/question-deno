@@ -197,6 +197,15 @@ export default async function checkbox<T = string>(label: string, options: T[] |
         await clear()
         await prompt()
       }],
+      [KeyCombos.parse('Ctrl+a'), async ({clear,prompt}) => {
+        if (selectedIndices.length === possibleOptions.length) {
+          selectedIndices.splice(0, selectedIndices.length)
+        } else {
+          selectedIndices.splice(0, selectedIndices.length, ...Array.from(possibleOptions, (_, i) => i))
+        }
+        await clear()
+        await prompt()
+      }],
       [KeyCombos.parse('space'), async ({clear,prompt}) => {
         if (selectedIndices.includes(cursorIndex)) deselect(cursorIndex)
         else select(cursorIndex)
