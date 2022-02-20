@@ -230,20 +230,23 @@ export async function configureForUnixPipes({ input, output, mode, promptPermiss
   }
   if (output === undefined || input === output) {
     if (await hasResourcePermission(input, { read: true, write: true, prompt: promptPermissionRequest ?? true })) {
-      const resource = await Deno.open(input, { read: true, write: true })
-      questionConfig.keypressReader = resource
-      questionConfig.writer = resource
+      const r = await Deno.open(input, { read: true, write: true })
+      questionConfig.keypressReader = r
+      questionConfig.writer = r
+      window.addEventListener('unload', () => r.close())
     } else if (permissionMode === 'panic')  {
       throw new Error(`Did not get permission to read and write from ` + input)
     }
   } else {
     if (await hasResourcePermission(input, { read: true, write: false, prompt: promptPermissionRequest ?? true })) {
-      questionConfig.keypressReader = await Deno.open(input, { read: true })
+      const r = questionConfig.keypressReader = await Deno.open(input, { read: true })
+      window.addEventListener('unload', () => r.close())
     } else {
       throw new Error(`Did not get permission to read from ` + input)
     }
     if (await hasResourcePermission(output, { read: false, write: true, prompt: promptPermissionRequest ?? true })) {
-      questionConfig.writer = await Deno.open(output, { write: true })
+      const r = questionConfig.writer = await Deno.open(output, { write: true })
+      window.addEventListener('unload', () => r.close())
     } else if (permissionMode === 'panic') {
       throw new Error(`Did not get permission to write from ` + output)
     }
