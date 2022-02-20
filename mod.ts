@@ -64,6 +64,7 @@ export default function question<T>(type: 'list', label: string, options: Record
  * Controls:
  * - `Ctrl+c` will have the question canceled and return `undefined`.
  * - `Ctrl+d` will exit the whole script no questions asked with a `Deno.exit()`.
+ * - `Ctrl+a` will select/deselect all options.
  * - `Up` arrow will move the selected item up once if able.
  * - `Down` arrow will move the selected item down once if able.
  * - `Home` will move the selected item up to the start if able.
@@ -112,6 +113,7 @@ export default function question(type: 'checkbox', label: string, options: strin
  * Controls:
  * - `Ctrl+c` will have the question canceled and return `undefined`.
  * - `Ctrl+d` will exit the whole script no questions asked with a `Deno.exit()`.
+ * - `Ctrl+a` will select/deselect all options.
  * - `Up` arrow will move the selected item up once if able.
  * - `Down` arrow will move the selected item down once if able.
  * - `Home` will move the selected item up to the start if able.

@@ -92,6 +92,10 @@ Controls:
 - `Ctrl+d` will exit the whole script no questions asked with a `Deno.exit()`.
 - `Up` arrow will move the selected item up once if able.
 - `Down` arrow will move the selected item down once if able.
+- `Home` will move the selected item up to the start if able.
+- `End` will move the selected item down to the end if able.
+- `PageUp` will move the selected item up by the actual list window size if able.
+- `PageDown` will move the selected item down by the actual list window size if able.
 - `Enter` will return the currently selected item.
 
 The options can either be a list of strings or an object describing the different options.
@@ -115,10 +119,16 @@ to be selected this will return `undefined` without a question prompt.
 
 Controls:
 
+
 - `Ctrl+c` will have the question canceled and return `undefined`.
 - `Ctrl+d` will exit the whole script no questions asked with a `Deno.exit()`.
+- `Ctrl+a` will select/deselect all options.
 - `Up` arrow will move the selected item up once if able.
 - `Down` arrow will move the selected item down once if able.
+- `Home` will move the selected item up to the start if able.
+- `End` will move the selected item down to the end if able.
+- `PageUp` will move the selected item up by the actual list window size if able.
+- `PageDown` will move the selected item down by the actual list window size if able.
 - `Space` will mark/unmark the selected item.
 - `Enter` will return all marked items in a list.
 
