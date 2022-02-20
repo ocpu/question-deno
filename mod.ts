@@ -19,6 +19,8 @@ export type { ListOptions } from './list.ts'
  * - `Ctrl+d` will exit the whole script no questions asked with a `Deno.exit()`.
  * - `Up` arrow will move the selected item up once if able.
  * - `Down` arrow will move the selected item down once if able.
+ * - `Home` will move the selected item up to the start if able.
+ * - `End` will move the selected item down to the end if able.
  * - `Enter` will return the currently selected item.
  *
  * Requires `--unstable` until the `Deno.setRaw` API is finalized.
@@ -40,6 +42,8 @@ export default function question(type: 'list', label: string, options: string[],
  * - `Ctrl+d` will exit the whole script no questions asked with a `Deno.exit()`.
  * - `Up` arrow will move the selected item up once if able.
  * - `Down` arrow will move the selected item down once if able.
+ * - `Home` will move the selected item up to the start if able.
+ * - `End` will move the selected item down to the end if able.
  * - `Enter` will return the currently selected item.
  *
  * Requires `--unstable` until the `Deno.setRaw` API is finalized.
@@ -58,6 +62,8 @@ export default function question<T>(type: 'list', label: string, options: Record
  * - `Ctrl+d` will exit the whole script no questions asked with a `Deno.exit()`.
  * - `Up` arrow will move the selected item up once if able.
  * - `Down` arrow will move the selected item down once if able.
+ * - `Home` will move the selected item up to the start if able.
+ * - `End` will move the selected item down to the end if able.
  * - `Space` will mark/unmark the selected item.
  * - `Enter` will return all marked items in a list.
  *
@@ -102,6 +108,8 @@ export default function question(type: 'checkbox', label: string, options: strin
  * - `Ctrl+d` will exit the whole script no questions asked with a `Deno.exit()`.
  * - `Up` arrow will move the selected item up once if able.
  * - `Down` arrow will move the selected item down once if able.
+ * - `Home` will move the selected item up to the start if able.
+ * - `End` will move the selected item down to the end if able.
  * - `Space` will mark/unmark the selected item.
  * - `Enter` will return all marked items in a list.
  *

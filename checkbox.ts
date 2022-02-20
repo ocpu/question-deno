@@ -72,6 +72,8 @@ export interface CheckboxOptions {
  * - `Ctrl+d` will exit the whole script no questions asked with a `Deno.exit()`.
  * - `Up` arrow will move the selected item up once if able.
  * - `Down` arrow will move the selected item down once if able.
+ * - `Home` will move the selected item up to the start if able.
+ * - `End` will move the selected item down to the end if able.
  * - `Space` will mark/unmark the selected item.
  * - `Enter` will return all marked items in a list.
  *

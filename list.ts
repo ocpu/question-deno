@@ -43,6 +43,8 @@ export interface ListOptions {
  * - `Ctrl+d` will exit the whole script no questions asked with a `Deno.exit()`.
  * - `Up` arrow will move the selected item up once if able.
  * - `Down` arrow will move the selected item down once if able.
+ * - `Home` will move the selected item up to the start if able.
+ * - `End` will move the selected item down to the end if able.
  * - `Enter` will return the currently selected item.
  *
  * Requires `--unstable` until the `Deno.setRaw` API is finalized.
@@ -113,6 +115,23 @@ export default async function list<T = string>(label: string, options: string[] 
         
         if (offsetWindowScroll && selectedIndex !== possibleOptions.length - 1) indexOffset = selectedIndex >= indexOffset + actualWindowSize - 2 ? selectedIndex - actualWindowSize + 2 : indexOffset
         else indexOffset = selectedIndex >= indexOffset + actualWindowSize - 1 ? selectedIndex - actualWindowSize + 1 : indexOffset
+        await clear()
+        await prompt()
+      }],
+      [KeyCombos.parse('home'), async ({clear,prompt}) => {
+        const newIndex = 0
+        if (newIndex === selectedIndex) return
+        selectedIndex = newIndex
+        indexOffset = 0
+        await clear()
+        await prompt()
+      }],
+      [KeyCombos.parse('end'), async ({clear,prompt}) => {
+        const newIndex = possibleOptions.length - 1
+        if (newIndex === selectedIndex) return
+        selectedIndex = newIndex
+        const actualWindowSize = Math.min(desiredWindowSize, Deno.consoleSize(config.writer.rid).rows - 3)
+        indexOffset = Math.max(0, newIndex - actualWindowSize + 1)
         await clear()
         await prompt()
       }],
