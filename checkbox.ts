@@ -74,6 +74,8 @@ export interface CheckboxOptions {
  * - `Down` arrow will move the selected item down once if able.
  * - `Home` will move the selected item up to the start if able.
  * - `End` will move the selected item down to the end if able.
+ * - `PageUp` will move the selected item up by the actual list window size if able.
+ * - `PageDown` will move the selected item down by the actual list window size if able.
  * - `Space` will mark/unmark the selected item.
  * - `Enter` will return all marked items in a list.
  *
@@ -167,6 +169,31 @@ export default async function checkbox<T = string>(label: string, options: T[] |
         cursorIndex = newIndex
         const actualWindowSize = Math.min(desiredWindowSize, Deno.consoleSize(config.writer.rid).rows - 3)
         indexOffset = Math.max(0, newIndex - actualWindowSize + 1)
+        await clear()
+        await prompt()
+      }],
+      [KeyCombos.parse('pageup'), async ({clear,prompt}) => {
+        const actualWindowSize = Math.min(desiredWindowSize, Deno.consoleSize(config.writer.rid).rows - 3)
+        const newIndex = Math.max(0, cursorIndex - actualWindowSize)
+
+        if (newIndex === cursorIndex) return
+        cursorIndex = newIndex
+        indexOffset = newIndex
+        await clear()
+        await prompt()
+      }],
+      [KeyCombos.parse('pagedown'), async ({clear,prompt}) => {
+        const actualWindowSize = Math.min(desiredWindowSize, Deno.consoleSize(config.writer.rid).rows - 3)
+        const offsetWindowScroll = actualWindowSize > 1 && (checkboxOptions?.offsetWindowScroll ?? true)
+
+        const newIndex = Math.min(possibleOptions.length - 1, cursorIndex + actualWindowSize)
+        if (newIndex === cursorIndex) return
+
+        cursorIndex = newIndex
+        indexOffset = Math.min(possibleOptions.length - actualWindowSize - 1, newIndex)
+        if (indexOffset === possibleOptions.length - actualWindowSize - 1 && offsetWindowScroll) {
+          indexOffset += 1
+        }
         await clear()
         await prompt()
       }],

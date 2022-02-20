@@ -21,6 +21,8 @@ export type { ListOptions } from './list.ts'
  * - `Down` arrow will move the selected item down once if able.
  * - `Home` will move the selected item up to the start if able.
  * - `End` will move the selected item down to the end if able.
+ * - `PageUp` will move the selected item up by the actual list window size if able.
+ * - `PageDown` will move the selected item down by the actual list window size if able.
  * - `Enter` will return the currently selected item.
  *
  * Requires `--unstable` until the `Deno.setRaw` API is finalized.
@@ -44,6 +46,8 @@ export default function question(type: 'list', label: string, options: string[],
  * - `Down` arrow will move the selected item down once if able.
  * - `Home` will move the selected item up to the start if able.
  * - `End` will move the selected item down to the end if able.
+ * - `PageUp` will move the selected item up by the actual list window size if able.
+ * - `PageDown` will move the selected item down by the actual list window size if able.
  * - `Enter` will return the currently selected item.
  *
  * Requires `--unstable` until the `Deno.setRaw` API is finalized.
@@ -64,6 +68,8 @@ export default function question<T>(type: 'list', label: string, options: Record
  * - `Down` arrow will move the selected item down once if able.
  * - `Home` will move the selected item up to the start if able.
  * - `End` will move the selected item down to the end if able.
+ * - `PageUp` will move the selected item up by the actual list window size if able.
+ * - `PageDown` will move the selected item down by the actual list window size if able.
  * - `Space` will mark/unmark the selected item.
  * - `Enter` will return all marked items in a list.
  *
@@ -110,6 +116,8 @@ export default function question(type: 'checkbox', label: string, options: strin
  * - `Down` arrow will move the selected item down once if able.
  * - `Home` will move the selected item up to the start if able.
  * - `End` will move the selected item down to the end if able.
+ * - `PageUp` will move the selected item up by the actual list window size if able.
+ * - `PageDown` will move the selected item down by the actual list window size if able.
  * - `Space` will mark/unmark the selected item.
  * - `Enter` will return all marked items in a list.
  *
