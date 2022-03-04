@@ -156,7 +156,7 @@ export default async function list<T = string>(label: string, options: string[] 
   await print(HIDE_CURSOR)
   return createRenderer({
     label,
-    onExit: () => !filteringEnabled ? print(SHOW_CURSOR) : void 0,
+    onExit: () => print(SHOW_CURSOR),
     clear: () => {
       if (filteringEnabled) {
         return print(moveCursor(printedLines - 1, 'down') + (CLEAR_LINE + moveCursor(1, 'up')).repeat(printedLines - 1) + CLEAR_LINE)
