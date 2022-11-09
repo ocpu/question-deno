@@ -187,7 +187,7 @@ export default async function list<T = string>(label: string, options: string[] 
   const noMoreContentPattern = listOptions?.noMoreContentPattern ?? DEFAULT_NO_MORE_CONTENT_PATTERN
   const moreContentPattern = listOptions?.moreContentPattern ?? DEFAULT_MORE_CONTENT_PATTERN
   const longestItemLabelLength = Math.max(15, possibleOptions.map(it => it.label.length).sort((a, b) => b - a)[0] + 4)
-  await print(HIDE_CURSOR)
+  if (!filteringEnabled) await print(HIDE_CURSOR)
   return createRenderer({
     label,
     onExit: () => print(SHOW_CURSOR),
@@ -217,7 +217,7 @@ export default async function list<T = string>(label: string, options: string[] 
         if (filteringEnabled) {
           out += `[${(visibleOptions.length+'').padStart((''+possibleOptions.length).length)}/${possibleOptions.length}] Search: ${searchText}`
         }
-        const promptLineLength = out.length
+        const promptLineLength = 3 + label.length + (!filteringEnabled ? 0 : 12 + (''+possibleOptions.length).length * 2)
         out += '\n'
         if (showNarrowWindow) {
           if (indexOffset !== 0) out += moreContentPattern.repeat(Math.ceil(longestItemLabelLength / moreContentPattern.length)).slice(0, longestItemLabelLength) + '\n'
@@ -246,7 +246,7 @@ export default async function list<T = string>(label: string, options: string[] 
         }
         printedLines = len + 1 + (showNarrowWindow ? 2 : 0)
         if (filteringEnabled) {
-          out += moveCursor(len > 0 ? printedLines - 1 : 1, 'up') + moveCursor(500, 'left') + moveCursor(promptLineLength + 3 - longestItemLabelLength - searchText.length + searchTextIndex, 'right')
+          out += moveCursor(len > 0 ? printedLines - 1 : 1, 'up') + moveCursor(500, 'left') + moveCursor(promptLineLength + searchTextIndex, 'right')
         }
         await print(out)
       }
@@ -277,24 +277,6 @@ export default async function list<T = string>(label: string, options: string[] 
 
         if (offsetWindowScroll && selectedIndex !== visibleOptions.length - 1) indexOffset = selectedIndex >= indexOffset + actualWindowSize - 2 ? selectedIndex - actualWindowSize + 2 : indexOffset
         else indexOffset = selectedIndex >= indexOffset + actualWindowSize - 1 ? selectedIndex - actualWindowSize + 1 : indexOffset
-        await clear()
-        await prompt()
-      }],
-      [KeyCombos.parse('left'), async ({clear,prompt}) => {
-        if (!inlineEnabled) return
-        const newIndex = Math.min(Math.max(selectedIndex - 1, 0), visibleOptions.length - 1)
-        if (newIndex === selectedIndex) return
-        selectedIndex = newIndex
-
-        await clear()
-        await prompt()
-      }],
-      [KeyCombos.parse('right'), async ({clear,prompt}) => {
-        if (!inlineEnabled) return
-        const newIndex = Math.min(Math.max(selectedIndex + 1, 0), visibleOptions.length - 1)
-        if (newIndex === selectedIndex) return
-        selectedIndex = newIndex
-
         await clear()
         await prompt()
       }],
@@ -347,24 +329,42 @@ export default async function list<T = string>(label: string, options: string[] 
       }],
       // Search Input
       [KeyCombos.parse('left'), async ({clear,prompt}) => {
-        if (!filteringEnabled) return
-        if (searchText.length === 0) return
-        const newIndex = Math.min(Math.max(searchTextIndex - 1, 0), searchText.length)
-        if (newIndex === searchTextIndex) return
-        searchTextIndex = newIndex
-        await clear()
-        updateOptions()
-        await prompt()
+        if (inlineEnabled) {
+          const newIndex = Math.min(Math.max(selectedIndex - 1, 0), visibleOptions.length - 1)
+          if (newIndex === selectedIndex) return
+          selectedIndex = newIndex
+
+          await clear()
+          await prompt()
+        } else {
+          if (!filteringEnabled) return
+          if (searchText.length === 0) return
+          const newIndex = Math.min(Math.max(searchTextIndex - 1, 0), searchText.length)
+          if (newIndex === searchTextIndex) return
+          searchTextIndex = newIndex
+          await clear()
+          updateOptions()
+          await prompt()
+        }
       }],
       [KeyCombos.parse('right'), async ({clear,prompt}) => {
-        if (!filteringEnabled) return
-        if (searchText.length === 0) return
-        const newIndex = Math.min(Math.max(searchTextIndex + 1, 0), searchText.length)
-        if (newIndex === searchTextIndex) return
-        searchTextIndex = newIndex
-        await clear()
-        updateOptions()
-        await prompt()
+        if (inlineEnabled) {
+          const newIndex = Math.min(Math.max(selectedIndex + 1, 0), visibleOptions.length - 1)
+          if (newIndex === selectedIndex) return
+          selectedIndex = newIndex
+
+          await clear()
+          await prompt()
+        } else {
+          if (!filteringEnabled) return
+          if (searchText.length === 0) return
+          const newIndex = Math.min(Math.max(searchTextIndex + 1, 0), searchText.length)
+          if (newIndex === searchTextIndex) return
+          searchTextIndex = newIndex
+          await clear()
+          updateOptions()
+          await prompt()
+        }
       }],
       [KeyCombos.parse('backspace'), async ({clear,prompt}) => {
         if (!filteringEnabled) return

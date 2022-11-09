@@ -43,7 +43,7 @@ const commonPorts = {
   'FTPS Control': 990,
 }
 
-await question('list', 'Select service:', commonPorts, { windowSize: 7, filtering: true })
+await question('list', 'Select Service:', commonPorts, { windowSize: 7, filtering: true })
 await question(
   'checkbox',
   'Select Services:',
