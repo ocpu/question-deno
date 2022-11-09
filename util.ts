@@ -1,6 +1,8 @@
 import KeyCombo, { KeyCombos } from './KeyCombo.ts'
-import { Keypress, readKeypress } from 'https://deno.land/x/keypress@0.0.7/mod.ts'
-import questionConfig from './config.ts';
+import { Keypress, decodeKeypress } from 'https://deno.land/x/keypress@0.0.7/mod.ts'
+import { config as questionConfig } from './config.ts'
+
+const [major, minor, _patch] = Deno.version.deno.split('.').map(it => parseInt(it))
 
 export const PRIMARY_COLOR = '\x1b[94m'
 export const RESET_COLOR = '\x1b[0m'
@@ -59,6 +61,23 @@ export function print(text: string, writer: Deno.Writer = questionConfig.writer)
 export function println(text: string, writer: Deno.Writer = questionConfig.writer) {
   return writer.write(encoder.encode(text + '\n'))
 }
+export function getConsoleSize() {
+  if (major <= 1 && minor < 27) {
+    //@ts-ignore Removed part of the API
+    if (typeof Deno.consoleSize === 'function' && Deno.consoleSize.length === 1) {
+      //@ts-ignore Removed part of the API
+      return Deno.consoleSize(questionConfig.writer.rid)
+    } else {
+      throw new UnsupportedDenoVersionError("This version does not have a setRaw function")
+    }
+  } else {
+    if (questionConfig.writer.rid !== Deno.stdout.rid) {
+      throw new UnsupportedDenoVersionError("This version does not have a general consoleSize for any resource id. Do only use stdout. https://github.com/denoland/deno/issues/15796")
+    } else {
+      return Deno.consoleSize()
+    }
+  }
+}
 interface CreateRendererOptions<R> {
   label: string
   prompt(): any|Promise<any>
@@ -72,7 +91,7 @@ export async function createRenderer<R>(options: CreateRendererOptions<R>): Prom
   const exitKeyCombo = KeyCombo.parse('Ctrl+d')
 
   if (options.onExit) {
-    window.addEventListener('unload', options.onExit)
+    globalThis.addEventListener('unload', options.onExit)
   }
   await options.prompt()
   keys:for await (const keypress of readKeypress(questionConfig.keypressReader)) {
@@ -80,7 +99,7 @@ export async function createRenderer<R>(options: CreateRendererOptions<R>): Prom
       await options.clear()
       if (options.onExit) {
         await options.onExit()
-        window.removeEventListener('unload', options.onExit)
+        globalThis.removeEventListener('unload', options.onExit)
       }
       await println(PREFIX + asPromptText(options.label) + highlightText(`<cancel>`))
       return undefined
@@ -98,7 +117,7 @@ export async function createRenderer<R>(options: CreateRendererOptions<R>): Prom
         } else {
           if (options.onExit) {
             await options.onExit()
-            window.removeEventListener('unload', options.onExit)
+            globalThis.removeEventListener('unload', options.onExit)
           }
           return result.result
         }
@@ -111,10 +130,79 @@ export async function createRenderer<R>(options: CreateRendererOptions<R>): Prom
       } else {
         if (options.onExit) {
           await options.onExit()
-          window.removeEventListener('unload', options.onExit)
+          globalThis.removeEventListener('unload', options.onExit)
         }
         return result.result
       }
+    }
+  }
+}
+
+interface RawReader extends Deno.Reader {
+  readonly rid: number
+  setRaw(mode: boolean): void
+}
+
+export class NotATTYError extends Error {
+  name = "NotATTYError"
+}
+
+export class UnsupportedDenoVersionError extends Error {
+  name = "UnsupportedDenoVersionError"
+}
+
+function createRawHandler(reader: Deno.Reader & { rid: number }): RawReader {
+  if (!Deno.isatty(reader.rid)) {
+    throw new Error('The reader resource is not a TTY.')
+  }
+
+  if (major <= 1 && minor < 27) {
+    //@ts-ignore Previous unstable API now removed
+    if (typeof Deno.setRaw === 'function') {
+      return {
+        read: p => reader.read(p),
+        rid: reader.rid,
+        setRaw(raw) {
+          //@ts-ignore Previous unstable API now removed
+          Deno.setRaw(reader.rid, raw)
+        },
+      }
+    } else {
+      throw new UnsupportedDenoVersionError("This version does not have a setRaw function")
+    }
+  } else {
+    if (reader.rid !== Deno.stdin.rid) {
+      throw new UnsupportedDenoVersionError("This version does not have a general setRaw for any resource id. Do only use stdin. https://github.com/denoland/deno/issues/15796")
+    } else {
+      return {
+        read: p => reader.read(p),
+        rid: reader.rid,
+        setRaw(mode) {
+          //@ts-ignore Previous unstable API now removed
+          Deno.stdin.setRaw(mode, { cbreak: false })
+        },
+      }
+    }
+  }
+}
+
+/**
+ * Read character sequence and decode it as keypress
+ * @param reader - TTY reader
+ * @param bufferLength - used because of opportunity to paste text in terminal
+ */
+export async function* readKeypress(reader: Deno.Reader & { rid: number }, bufferLength = 1024): AsyncIterableIterator<Keypress> {
+  const handler = createRawHandler(reader)
+
+  while (true) {
+    const buffer = new Uint8Array(bufferLength)
+    handler.setRaw(true);
+    const length = await handler.read(buffer)
+    if (length === null) break
+    handler.setRaw(false)
+
+    for (const event of decodeKeypress(buffer.subarray(0, length))) {
+      yield event;
     }
   }
 }

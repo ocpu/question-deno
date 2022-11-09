@@ -15,7 +15,7 @@ import { print, println, PREFIX, asPromptText, CLEAR_LINE, highlightText, create
  * - `Right` arrow will move the cursor one step to the right once if able.
  * - `Enter` will return the test inputted or the provided default value.
  *
- * Requires `--unstable` until the `Deno.setRaw` API is finalized.
+ * Requires `--unstable` until Deno version 1.27.
  * @param label The label the question will have.
  * @param defaultValue The value that will determine the resulting value if none was provided.
  * @returns The answer text, default value text, or `undefined` if canceled.

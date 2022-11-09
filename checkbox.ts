@@ -1,5 +1,5 @@
 import { KeyCombos } from './KeyCombo.ts'
-import { print, println, HIDE_CURSOR, SHOW_CURSOR, PREFIX, asPromptText, CLEAR_LINE, highlightText, createRenderer, PRIMARY_COLOR, RESET_COLOR, moveCursor } from './util.ts'
+import { print, println, HIDE_CURSOR, SHOW_CURSOR, PREFIX, asPromptText, CLEAR_LINE, highlightText, createRenderer, PRIMARY_COLOR, RESET_COLOR, moveCursor, getConsoleSize } from './util.ts'
 import config from './config.ts'
 import { TextRange, textSearch } from "./text-util.ts";
 
@@ -149,7 +149,7 @@ const DEFAULT_TEXT_FILTERING: TextFilteringOptions = {
  * - `Space` will mark/unmark the selected item.
  * - `Enter` will return all marked items in a list.
  *
- * Requires `--unstable` until the `Deno.setRaw` API is finalized.
+ * Requires `--unstable` until Deno version 1.27.
  * @param label The label the question will have.
  * @param options The options the user has to choose from.
  * @returns The marked options or `undefined` if canceled or empty.
@@ -194,7 +194,7 @@ export default async function checkbox<T = string>(label: string, options: T[] |
       }
     },
     async prompt() {
-      const actualWindowSize = Math.min(desiredWindowSize, Deno.consoleSize(config.writer.rid).rows - 3)
+      const actualWindowSize = Math.min(desiredWindowSize, getConsoleSize().rows - 3)
       const showNarrowWindow = actualWindowSize < visibleOptions.length
       const len = Math.min(actualWindowSize, visibleOptions.length)
 
@@ -246,7 +246,7 @@ export default async function checkbox<T = string>(label: string, options: T[] |
         const newIndex = Math.min(Math.max(cursorIndex - 1, 0), visibleOptions.length - 1)
         if (newIndex === cursorIndex) return
         cursorIndex = newIndex
-        const actualWindowSize = Math.min(desiredWindowSize, Deno.consoleSize(config.writer.rid).rows - 3)
+        const actualWindowSize = Math.min(desiredWindowSize, getConsoleSize().rows - 3)
         const offsetWindowScroll = actualWindowSize > 1 && (checkboxOptions?.offsetWindowScroll ?? true)
 
         if (offsetWindowScroll && cursorIndex !== 0) indexOffset = cursorIndex - 1 < indexOffset ? cursorIndex - 1 : indexOffset
@@ -259,7 +259,7 @@ export default async function checkbox<T = string>(label: string, options: T[] |
         if (newIndex === cursorIndex) return
         cursorIndex = newIndex
 
-        const actualWindowSize = Math.min(desiredWindowSize, Deno.consoleSize(config.writer.rid).rows - 3)
+        const actualWindowSize = Math.min(desiredWindowSize, getConsoleSize().rows - 3)
         const offsetWindowScroll = actualWindowSize > 1 && (checkboxOptions?.offsetWindowScroll ?? true)
 
         if (offsetWindowScroll && cursorIndex !== visibleOptions.length - 1) indexOffset = cursorIndex >= indexOffset + actualWindowSize - 2 ? cursorIndex - actualWindowSize + 2 : indexOffset
@@ -279,13 +279,13 @@ export default async function checkbox<T = string>(label: string, options: T[] |
         const newIndex = visibleOptions.length - 1
         if (newIndex === cursorIndex) return
         cursorIndex = newIndex
-        const actualWindowSize = Math.min(desiredWindowSize, Deno.consoleSize(config.writer.rid).rows - 3)
+        const actualWindowSize = Math.min(desiredWindowSize, getConsoleSize().rows - 3)
         indexOffset = Math.max(0, newIndex - actualWindowSize + 1)
         await clear()
         await prompt()
       }],
       [KeyCombos.parse('pageup'), async ({clear,prompt}) => {
-        const actualWindowSize = Math.min(desiredWindowSize, Deno.consoleSize(config.writer.rid).rows - 3)
+        const actualWindowSize = Math.min(desiredWindowSize, getConsoleSize().rows - 3)
         const newIndex = Math.max(0, cursorIndex - actualWindowSize)
 
         if (newIndex === cursorIndex) return
@@ -295,7 +295,7 @@ export default async function checkbox<T = string>(label: string, options: T[] |
         await prompt()
       }],
       [KeyCombos.parse('pagedown'), async ({clear,prompt}) => {
-        const actualWindowSize = Math.min(desiredWindowSize, Deno.consoleSize(config.writer.rid).rows - 3)
+        const actualWindowSize = Math.min(desiredWindowSize, getConsoleSize().rows - 3)
         const offsetWindowScroll = actualWindowSize > 1 && (checkboxOptions?.offsetWindowScroll ?? true)
 
         const newIndex = Math.min(visibleOptions.length - 1, cursorIndex + actualWindowSize)

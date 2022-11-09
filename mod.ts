@@ -3,8 +3,10 @@ import checkbox, { CheckboxOptions, ObjectOption } from './checkbox.ts'
 import list, { ListOptions } from './list.ts'
 import input from './input.ts'
 import password from './password.ts'
-import questionConfig from './config.ts';
+import questionConfig, { setQuestionConfig } from './config.ts';
+import { UnsupportedDenoVersionError } from "./util.ts";
 
+export { setQuestionConfig } from './config.ts';
 export type { Config } from './config.ts';
 export type { ConfirmOptions } from './confirm.ts'
 export type { CheckboxOptions, ObjectOption } from './checkbox.ts'
@@ -33,7 +35,7 @@ export type { ListOptions } from './list.ts'
  * - `PageDown` will move the selected item down by the actual list window size if able.
  * - `Enter` will return the currently selected item.
  *
- * Requires `--unstable` until the `Deno.setRaw` API is finalized.
+ * Requires `--unstable` until Deno version 1.27.
  * @param type The list type.
  * @param label The label the question will have.
  * @param options The options the user has to choose from.
@@ -66,7 +68,7 @@ export default function question(type: 'list', label: string, options: string[],
  * - `PageDown` will move the selected item down by the actual list window size if able.
  * - `Enter` will return the currently selected item.
  *
- * Requires `--unstable` until the `Deno.setRaw` API is finalized.
+ * Requires `--unstable` until Deno version 1.27.
  * @param type The list type.
  * @param label The label the question will have.
  * @param options The options the user has to choose from.
@@ -98,7 +100,7 @@ export default function question<T>(type: 'list', label: string, options: Record
  * - `Space` will mark/unmark the selected item.
  * - `Enter` will return all marked items in a list.
  *
- * Requires `--unstable` until the `Deno.setRaw` API is finalized.
+ * Requires `--unstable` until Deno version 1.27.
  * @param type The checkbox type.
  * @param label The label the question will have.
  * @param options The options the user has to choose from.
@@ -155,7 +157,7 @@ export default function question(type: 'checkbox', label: string, options: strin
  * - `Space` will mark/unmark the selected item.
  * - `Enter` will return all marked items in a list.
  *
- * Requires `--unstable` until the `Deno.setRaw` API is finalized.
+ * Requires `--unstable` until Deno version 1.27.
  * @param type The checkbox type.
  * @param label The label the question will have.
  * @param options The options the user has to choose from.
@@ -184,7 +186,7 @@ export default function question<T>(type: 'checkbox', label: string, options: Re
  * - `Right` arrow will move the cursor one step to the right once if able.
  * - `Enter` will return the parsed result of the text.
  *
- * Requires `--unstable` until the `Deno.setRaw` API is finalized.
+ * Requires `--unstable` until Deno version 1.27.
  * @param type The confirm type.
  * @param label The label the question will have.
  * @param defaultValue The value that will determine the resulting value if none was provided.
@@ -205,7 +207,7 @@ export default function question(type: 'confirm', label: string, defaultValue?: 
  * - `Right` arrow will move the cursor one step to the right once if able.
  * - `Enter` will return the test inputted or the provided default value.
  *
- * Requires `--unstable` until the `Deno.setRaw` API is finalized.
+ * Requires `--unstable` until Deno version 1.27.
  * @param type The input type.
  * @param label The label the question will have.
  * @param defaultValue The value that will determine the resulting value if none was provided.
@@ -230,7 +232,7 @@ export default function question(type: 'input', label: string, defaultValue?: st
  * - `Right` arrow will move the cursor one step to the right once if able.
  * - `Enter` will return the test inputted or the provided default value.
  *
- * Requires `--unstable` until the `Deno.setRaw` API is finalized.
+ * Requires `--unstable` until Deno version 1.27.
  * @param type The password type.
  * @param label The label the question will have.
  * @param substitute The substitution string or boolean indicating if you want a substitution string.
@@ -250,6 +252,8 @@ export default function question(type: string, ...opts: any[]): Promise<any | un
 
 export { questionConfig };
 
+const [major, minor, _patch] = Deno.version.deno.split('.').map(it => parseInt(it))
+
 export interface ConfigureForUnixPipesOptions {
   /** From where the input will be received. */
   input: string
@@ -263,17 +267,27 @@ export interface ConfigureForUnixPipesOptions {
 
 /**
  * Will configure the output and input used by the prompts to not use stdin and stdout files.
- * 
+ *
  * If no options are specified it will choose /dev/tty as its file to output and input. If only one
  * option is specified it will be used as its input AND output.
- * 
+ *
  * By default it will panic if the program does not get permission from the user to read or write to
  * the files specified in the options. This can change to a fallback mode where if the program does
  * not get permission it will use the default.
- * 
+ *
  * @param param0 The options to use when executing.
  */
 export async function configureForUnixPipes({ input, output, mode, promptPermissionRequest }: Partial<ConfigureForUnixPipesOptions> = {}) {
+  if (major >= 1 && minor >= 27) {
+    //@ts-ignore Unsupported API
+    if (typeof Deno.setRaw !== 'function' || Deno.setRaw.length < 2) {
+      throw new UnsupportedDenoVersionError("This version does not have a general setRaw for any resource id. Do only use stdin. https://github.com/denoland/deno/issues/15796")
+    }
+    //@ts-ignore Unsupported API
+    if (typeof Deno.consoleSize !== 'function' || Deno.consoleSize.length < 1) {
+      throw new UnsupportedDenoVersionError("This version does not have a general setRaw for any resource id. Do only use stdin. https://github.com/denoland/deno/issues/15796")
+    }
+  }
   const permissionMode = mode ?? 'panic'
   if (input === undefined) {
     input = output ?? '/dev/tty'
@@ -281,22 +295,26 @@ export async function configureForUnixPipes({ input, output, mode, promptPermiss
   if (output === undefined || input === output) {
     if (await hasResourcePermission(input, { read: true, write: true, prompt: promptPermissionRequest ?? true })) {
       const r = await Deno.open(input, { read: true, write: true })
-      questionConfig.keypressReader = r
-      questionConfig.writer = r
-      window.addEventListener('unload', () => r.close())
+      setQuestionConfig({
+        keypressReader: r,
+        writer: r
+      })
+      globalThis.addEventListener('unload', () => r.close())
     } else if (permissionMode === 'panic')  {
       throw new Error(`Did not get permission to read and write from ` + input)
     }
   } else {
     if (await hasResourcePermission(input, { read: true, write: false, prompt: promptPermissionRequest ?? true })) {
-      const r = questionConfig.keypressReader = await Deno.open(input, { read: true })
-      window.addEventListener('unload', () => r.close())
+      const r = await Deno.open(input, { read: true })
+      setQuestionConfig({ keypressReader: r })
+      globalThis.addEventListener('unload', () => r.close())
     } else {
       throw new Error(`Did not get permission to read from ` + input)
     }
     if (await hasResourcePermission(output, { read: false, write: true, prompt: promptPermissionRequest ?? true })) {
-      const r = questionConfig.writer = await Deno.open(output, { write: true })
-      window.addEventListener('unload', () => r.close())
+      const r = await Deno.open(output, { write: true })
+      setQuestionConfig({ keypressReader: r })
+      globalThis.addEventListener('unload', () => r.close())
     } else if (permissionMode === 'panic') {
       throw new Error(`Did not get permission to write from ` + output)
     }

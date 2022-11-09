@@ -1,7 +1,6 @@
 import { KeyCombos } from './KeyCombo.ts'
-import { print, println, HIDE_CURSOR, SHOW_CURSOR, PREFIX, asPromptText, CLEAR_LINE, highlightText, createRenderer, moveCursor, PRIMARY_COLOR, RESET_COLOR } from './util.ts'
-import config from './config.ts'
-import { TextRange, textSearch } from "./text-util.ts";
+import { print, println, HIDE_CURSOR, SHOW_CURSOR, PREFIX, asPromptText, CLEAR_LINE, highlightText, createRenderer, moveCursor, PRIMARY_COLOR, RESET_COLOR, getConsoleSize } from './util.ts'
+import { TextRange, textSearch } from './text-util.ts'
 
 export interface ListOptions {
   /**
@@ -114,7 +113,7 @@ const LINE_COLOR_UNSELECTED = '\x1b[90m'
  * - `PageDown` will move the selected item down by the actual list window size if able.
  * - `Enter` will return the currently selected item.
  *
- * Requires `--unstable` until the `Deno.setRaw` API is finalized.
+ * Requires `--unstable` until Deno version 1.27.
  * @param label The label the question will have.
  * @param options The options the user has to choose from.
  * @returns The selected option or `undefined` if canceled or empty.
@@ -165,7 +164,7 @@ export default async function list<T = string>(label: string, options: string[] 
       }
     },
     async prompt() {
-      const actualWindowSize = Math.min(desiredWindowSize, Deno.consoleSize(config.writer.rid).rows - 3)
+      const actualWindowSize = Math.min(desiredWindowSize, getConsoleSize().rows - 3)
       const showNarrowWindow = actualWindowSize < visibleOptions.length
       const len = Math.min(actualWindowSize, visibleOptions.length)
 
@@ -212,7 +211,7 @@ export default async function list<T = string>(label: string, options: string[] 
         if (newIndex === selectedIndex) return
         selectedIndex = newIndex
 
-        const actualWindowSize = Math.min(desiredWindowSize, Deno.consoleSize(config.writer.rid).rows - 3)
+        const actualWindowSize = Math.min(desiredWindowSize, getConsoleSize().rows - 3)
         const offsetWindowScroll = actualWindowSize > 1 && (listOptions?.offsetWindowScroll ?? true)
 
         if (offsetWindowScroll && selectedIndex !== 0) indexOffset = selectedIndex - 1 < indexOffset ? selectedIndex - 1 : indexOffset
@@ -225,7 +224,7 @@ export default async function list<T = string>(label: string, options: string[] 
         if (newIndex === selectedIndex) return
         selectedIndex = newIndex
 
-        const actualWindowSize = Math.min(desiredWindowSize, Deno.consoleSize(config.writer.rid).rows - 3)
+        const actualWindowSize = Math.min(desiredWindowSize, getConsoleSize().rows - 3)
         const offsetWindowScroll = actualWindowSize > 1 && (listOptions?.offsetWindowScroll ?? true)
 
         if (offsetWindowScroll && selectedIndex !== visibleOptions.length - 1) indexOffset = selectedIndex >= indexOffset + actualWindowSize - 2 ? selectedIndex - actualWindowSize + 2 : indexOffset
@@ -245,13 +244,13 @@ export default async function list<T = string>(label: string, options: string[] 
         const newIndex = visibleOptions.length - 1
         if (newIndex === selectedIndex) return
         selectedIndex = newIndex
-        const actualWindowSize = Math.min(desiredWindowSize, Deno.consoleSize(config.writer.rid).rows - 3)
+        const actualWindowSize = Math.min(desiredWindowSize, getConsoleSize().rows - 3)
         indexOffset = Math.max(0, newIndex - actualWindowSize + 1)
         await clear()
         await prompt()
       }],
       [KeyCombos.parse('pageup'), async ({clear,prompt}) => {
-        const actualWindowSize = Math.min(desiredWindowSize, Deno.consoleSize(config.writer.rid).rows - 3)
+        const actualWindowSize = Math.min(desiredWindowSize, getConsoleSize().rows - 3)
         const newIndex = Math.max(0, selectedIndex - actualWindowSize)
 
         if (newIndex === selectedIndex) return
@@ -261,7 +260,7 @@ export default async function list<T = string>(label: string, options: string[] 
         await prompt()
       }],
       [KeyCombos.parse('pagedown'), async ({clear,prompt}) => {
-        const actualWindowSize = Math.min(desiredWindowSize, Deno.consoleSize(config.writer.rid).rows - 3)
+        const actualWindowSize = Math.min(desiredWindowSize, getConsoleSize().rows - 3)
         const offsetWindowScroll = actualWindowSize > 1 && (listOptions?.offsetWindowScroll ?? true)
 
         const newIndex = Math.min(visibleOptions.length - 1, selectedIndex + actualWindowSize)

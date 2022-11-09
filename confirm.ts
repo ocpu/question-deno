@@ -33,7 +33,7 @@ export interface ConfirmOptions {
  * - `Right` arrow will move the cursor one step to the right once if able.
  * - `Enter` will return the parsed result of the text.
  *
- * Requires `--unstable` until the `Deno.setRaw` API is finalized.
+ * Requires `--unstable` until Deno version 1.27.
  * @param label The label the question will have.
  * @param defaultValue The value that will determine the resulting value if none was provided.
  * @returns The boolean value from the answer or `undefined` if canceled.
