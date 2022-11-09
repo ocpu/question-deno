@@ -202,7 +202,7 @@ export default async function checkbox<T = string>(label: string, options: T[] |
       if (filteringEnabled) {
         out += `[${(visibleOptions.length+'').padStart((''+possibleOptions.length).length)}/${possibleOptions.length}] Search: ${searchText}`
       }
-      const promptLineLength = out.length
+      const promptLineLength = 3 + label.length + (!filteringEnabled ? 0 : 12 + (''+possibleOptions.length).length * 2)
       out += '\n'
       if (showNarrowWindow) {
         if (indexOffset !== 0) out += moreContentPattern.repeat(Math.ceil(longestItemLabelLength / moreContentPattern.length)).slice(0, longestItemLabelLength) + '\n'
@@ -237,7 +237,7 @@ export default async function checkbox<T = string>(label: string, options: T[] |
       }
       printedLines = len + 1 + (showNarrowWindow ? 2 : 0)
       if (filteringEnabled) {
-        out += moveCursor(len > 0 ? printedLines - 1 : 1, 'up') + moveCursor(500, 'left') + moveCursor(promptLineLength + 3 - longestItemLabelLength - searchText.length + searchTextIndex, 'right')
+        out += moveCursor(len > 0 ? printedLines - 1 : 1, 'up') + moveCursor(500, 'left') + moveCursor(promptLineLength + searchTextIndex, 'right')
       }
       await print(out)
     },
