@@ -18,7 +18,7 @@ export function asPromptText(text: string, reset: boolean = true) {
 type LuminosityType = 'light' | 'dark'
 type ColorType = 'grey' | 'red' | 'yellow' | 'green' | 'blue' | 'purple' | 'cyan'
 type Color = `${LuminosityType}${Capitalize<ColorType>}`
-const COLORS: { [C in Color]: number } = {
+const FOREGROUND_COLORS: { [C in Color]: number } = {
   darkGrey: 30,
   darkRed: 31,
   darkYellow: 32,
@@ -34,12 +34,62 @@ const COLORS: { [C in Color]: number } = {
   lightPurple: 95,
   lightCyan: 96,
 }
+
+const BACKGROUND_COLORS: { [C in Color]: number } = {
+  darkGrey: 40,
+  darkRed: 41,
+  darkYellow: 42,
+  darkGreen: 43,
+  darkBlue: 44,
+  darkPurple: 45,
+  darkCyan: 46,
+  lightGrey: 100,
+  lightRed: 101,
+  lightYellow: 102,
+  lightGreen: 103,
+  lightBlue: 104,
+  lightPurple: 105,
+  lightCyan: 106,
+}
+
+interface TextOptions {
+  noReset?: boolean
+  shouldHighlight?: boolean
+  underline?: boolean
+  dim?: boolean
+  bold?: boolean
+  italic?: boolean
+  strikethrough?: boolean
+  inverse?: boolean
+  hidden?: boolean
+  blinking?: boolean
+  foregroundColor?: Color
+  backgroundColor?: Color
+}
+
+export function text(text: string, options?: TextOptions) {
+  if (options === undefined || options.shouldHighlight === false) return text
+  let codes = ''
+  if (options.bold) codes += '1;'
+  if (options.dim) codes += '2;'
+  if (options.italic) codes += '3;'
+  if (options.underline) codes += '4;'
+  if (options.blinking) codes += '5;'
+  if (options.inverse) codes += '7;'
+  if (options.hidden) codes += '8;'
+  if (options.strikethrough) codes += '9;'
+  if (options.foregroundColor) codes += FOREGROUND_COLORS[options.foregroundColor] + ';'
+  if (options.backgroundColor) codes += BACKGROUND_COLORS[options.backgroundColor] + ';'
+  if (codes === '') return text
+  return'\x1b[' + codes.slice(0, -1) + 'm' + text + RESET_COLOR
+}
+
 export const PRIMARY_COLOR_NAME: Color = 'lightBlue'
 export function highlightText(text: string, { shouldHighlight = true, reset = true, underline = false, color = PRIMARY_COLOR_NAME }: {shouldHighlight?: boolean, reset?: boolean, color?: Color, underline?: boolean } = {}) {
   const extra = (shouldHighlight ? '' : '\x1b[') + (underline ? '4' : '') + (shouldHighlight ? ';' : 'm')
   if (shouldHighlight) {
-    if (reset) return '\x1b[' + extra + COLORS[color] + 'm' + text + RESET_COLOR
-    return '\x1b[' + extra + COLORS[color] + 'm' + text
+    if (reset) return '\x1b[' + extra + FOREGROUND_COLORS[color] + 'm' + text + RESET_COLOR
+    return '\x1b[' + extra + FOREGROUND_COLORS[color] + 'm' + text
   } else {
     if (reset) return extra + text + RESET_COLOR
     return extra + text

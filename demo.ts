@@ -53,3 +53,9 @@ await question(
     filtering: true
   }
 )
+
+void (await question('list', 'Should a thing be done?', {
+  'Yes': () => console.log('It will be done!'),
+  'No': () => console.log('It will not be done...'),
+  'Maybe': () => console.log('Be more decisive, please.')
+}, { inline: true }))?.()

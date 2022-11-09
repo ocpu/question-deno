@@ -10,21 +10,24 @@ export interface ListOptions {
    */
   windowSize?: number
   /**
-   * The pattern to repeat for when there are more items either above or below the current window.
+   * The pattern to repeat for when there are more items either above or below
+   * the current window.
    *
    * Default: `-`
    */
   moreContentPattern?: string
   /**
-   * The pattern to repeat for when there are no additional items either above or below the current window.
+   * The pattern to repeat for when there are no additional items either above
+   * or below the current window.
    *
    * Default: `=`
    */
   noMoreContentPattern?: string
   /**
-   * Whether or not to offset the selected item while going through the item list.
-   * If there are more items above or below (if enabled) it will select the next to last
-   * or first of the window always leaving 1 item offset if more items are available.
+   * Whether or not to offset the selected item while going through the item
+   * list. If there are more items above or below (if enabled) it will select
+   * the next to last or first of the window always leaving 1 item offset if
+   * more items are available.
    *
    * Default: `true`
    */
@@ -32,23 +35,43 @@ export interface ListOptions {
   /**
    * Should the options be able to be filtered.
    *
-   * With filtering enabled any key the user is inputting will go into a search field. The list will
-   * then filter the options by their label.
+   * With filtering enabled any key the user is inputting will go into a search
+   * field. The list will then filter the options by their label.
    *
-   * This option accepts an object for more granular control of the filtering and sorting of the results.
+   * This option accepts an object for more granular control of the filtering
+   * and sorting of the results.
    *
    * Default: `false`
    */
   filtering?: Partial<TextFilteringOptions> | boolean
+  /**
+   * Place all options on one line with a separator between.
+   *
+   * When the inline mode is enabled the up and down actions are replaced with
+   * left and right.
+   *
+   * Default: `false`
+   */
+  inline?: Partial<InlineOptions> | boolean
+}
+
+export interface InlineOptions {
+  /**
+   * The separator that will appear in between items in the list.
+   *
+   * Default: `/`
+   */
+  separator: string
 }
 
 export interface TextFilteringOptions {
   /**
    * Specify how to sort the filtered list.
    *
-   * - `none` specifies that the ordering should not change from what was specified by the option list.
-   * - `rank` specifies that the items will be sorted by the specificity of the matched values.
-   *   Higher match equals higher rank / further up the list.
+   * - `none` specifies that the ordering should not change from what was
+   *   specified by the option list.
+   * - `rank` specifies that the items will be sorted by the specificity of the
+   *   matched values. Higher match equals higher rank / further up the list.
    *
    * Default: `rank`
    */
@@ -78,6 +101,10 @@ const DEFAULT_TEXT_FILTERING: TextFilteringOptions = {
   highlight: false,
   showOnlyMatching: true,
   matchCase: false
+}
+
+const DEFAULT_INLINE: InlineOptions = {
+  separator: '/'
 }
 
 const DEFAULT_NO_MORE_CONTENT_PATTERN = '='
@@ -147,6 +174,14 @@ export default async function list<T = string>(label: string, options: string[] 
       ? listOptions?.filtering ?? {}
       : {}
   )
+  const inlineOptions: InlineOptions = Object.assign(
+    {},
+    DEFAULT_INLINE,
+    typeof listOptions?.inline === 'object'
+      ? listOptions?.inline ?? {}
+      : {}
+  )
+  const inlineEnabled = listOptions?.inline === true || typeof listOptions?.inline === 'object'
   const filteringEnabled = listOptions?.filtering === true || typeof listOptions?.filtering === 'object'
   const desiredWindowSize = Math.min(possibleOptions.length, Math.max(1, listOptions?.windowSize ?? possibleOptions.length))
   const noMoreContentPattern = listOptions?.noMoreContentPattern ?? DEFAULT_NO_MORE_CONTENT_PATTERN
@@ -164,49 +199,61 @@ export default async function list<T = string>(label: string, options: string[] 
       }
     },
     async prompt() {
-      const actualWindowSize = Math.min(desiredWindowSize, getConsoleSize().rows - 3)
-      const showNarrowWindow = actualWindowSize < visibleOptions.length
-      const len = Math.min(actualWindowSize, visibleOptions.length)
-
+    if (inlineEnabled) {
       let out = PREFIX + asPromptText(label)
-      if (filteringEnabled) {
-        out += `[${(visibleOptions.length+'').padStart((''+possibleOptions.length).length)}/${possibleOptions.length}] Search: ${searchText}`
-      }
-      const promptLineLength = out.length
-      out += '\n'
-      if (showNarrowWindow) {
-        if (indexOffset !== 0) out += moreContentPattern.repeat(Math.ceil(longestItemLabelLength / moreContentPattern.length)).slice(0, longestItemLabelLength) + '\n'
-        else out += noMoreContentPattern.repeat(Math.ceil(longestItemLabelLength / noMoreContentPattern.length)).slice(0, longestItemLabelLength) + '\n'
-      }
-
-      for (let index = 0; index < len; index++) {
-        const option = visibleOptions[indexOffset + index]
+      for (let index = 0; index < possibleOptions.length; index++) {
+        const option = possibleOptions[index]
         const lineColor = selectedIndex === indexOffset + index ? LINE_COLOR_CURSOR : LINE_COLOR_UNSELECTED
-        const current = selectedIndex === indexOffset + index
-          ? CURSOR_CHARACTER
-          : NON_CURSOR_CHARACTER
-        let label = option.label
-        if (filteringEnabled && filteringOptions.highlight)
-        for (const match of option.matchingTextRanges.reverse()) {
-          const before = label.slice(0, match.start)
-          const after = label.slice(match.end)
-          label = before + highlightText(label.slice(match.start, match.end), { underline: true, shouldHighlight: false }) + lineColor + after
-        }
-        out += `${lineColor}${current} ${label}${RESET_COLOR}${index + 1 === len ? '' : '\n'}`
-      }
-
-      if (showNarrowWindow) {
-        if (indexOffset + actualWindowSize !== visibleOptions.length) out += '\n' + moreContentPattern.repeat(Math.ceil(longestItemLabelLength / moreContentPattern.length)).slice(0, longestItemLabelLength)
-        else out += '\n' + noMoreContentPattern.repeat(Math.ceil(longestItemLabelLength / noMoreContentPattern.length)).slice(0, longestItemLabelLength)
-      }
-      printedLines = len + 1 + (showNarrowWindow ? 2 : 0)
-      if (filteringEnabled) {
-        out += moveCursor(len > 0 ? printedLines - 1 : 1, 'up') + moveCursor(500, 'left') + moveCursor(promptLineLength + 3 - longestItemLabelLength - searchText.length + searchTextIndex, 'right')
+        const label = option.label
+        out += `${lineColor}${label}${RESET_COLOR}${index + 1 === possibleOptions.length ? '' : inlineOptions.separator}`
       }
       await print(out)
+    } else {
+        const actualWindowSize = Math.min(desiredWindowSize, getConsoleSize().rows - 3)
+        const showNarrowWindow = actualWindowSize < visibleOptions.length
+        const len = Math.min(actualWindowSize, visibleOptions.length)
+
+        let out = PREFIX + asPromptText(label)
+        if (filteringEnabled) {
+          out += `[${(visibleOptions.length+'').padStart((''+possibleOptions.length).length)}/${possibleOptions.length}] Search: ${searchText}`
+        }
+        const promptLineLength = out.length
+        out += '\n'
+        if (showNarrowWindow) {
+          if (indexOffset !== 0) out += moreContentPattern.repeat(Math.ceil(longestItemLabelLength / moreContentPattern.length)).slice(0, longestItemLabelLength) + '\n'
+          else out += noMoreContentPattern.repeat(Math.ceil(longestItemLabelLength / noMoreContentPattern.length)).slice(0, longestItemLabelLength) + '\n'
+        }
+
+        for (let index = 0; index < len; index++) {
+          const option = visibleOptions[indexOffset + index]
+          const lineColor = selectedIndex === indexOffset + index ? LINE_COLOR_CURSOR : LINE_COLOR_UNSELECTED
+          const current = selectedIndex === indexOffset + index
+            ? CURSOR_CHARACTER
+            : NON_CURSOR_CHARACTER
+          let label = option.label
+          if (filteringEnabled && filteringOptions.highlight)
+          for (const match of option.matchingTextRanges.reverse()) {
+            const before = label.slice(0, match.start)
+            const after = label.slice(match.end)
+            label = before + highlightText(label.slice(match.start, match.end), { underline: true, shouldHighlight: false }) + lineColor + after
+          }
+          out += `${lineColor}${current} ${label}${RESET_COLOR}${index + 1 === len ? '' : '\n'}`
+        }
+
+        if (showNarrowWindow) {
+          if (indexOffset + actualWindowSize !== visibleOptions.length) out += '\n' + moreContentPattern.repeat(Math.ceil(longestItemLabelLength / moreContentPattern.length)).slice(0, longestItemLabelLength)
+          else out += '\n' + noMoreContentPattern.repeat(Math.ceil(longestItemLabelLength / noMoreContentPattern.length)).slice(0, longestItemLabelLength)
+        }
+        printedLines = len + 1 + (showNarrowWindow ? 2 : 0)
+        if (filteringEnabled) {
+          out += moveCursor(len > 0 ? printedLines - 1 : 1, 'up') + moveCursor(500, 'left') + moveCursor(promptLineLength + 3 - longestItemLabelLength - searchText.length + searchTextIndex, 'right')
+        }
+        await print(out)
+      }
     },
     actions: [
       [KeyCombos.parse('up'), async ({clear,prompt}) => {
+        if (inlineEnabled) return
         const newIndex = Math.min(Math.max(selectedIndex - 1, 0), visibleOptions.length - 1)
         if (newIndex === selectedIndex) return
         selectedIndex = newIndex
@@ -220,6 +267,7 @@ export default async function list<T = string>(label: string, options: string[] 
         await prompt()
       }],
       [KeyCombos.parse('down'), async ({clear,prompt}) => {
+        if (inlineEnabled) return
         const newIndex = Math.min(Math.max(selectedIndex + 1, 0), visibleOptions.length - 1)
         if (newIndex === selectedIndex) return
         selectedIndex = newIndex
@@ -229,6 +277,24 @@ export default async function list<T = string>(label: string, options: string[] 
 
         if (offsetWindowScroll && selectedIndex !== visibleOptions.length - 1) indexOffset = selectedIndex >= indexOffset + actualWindowSize - 2 ? selectedIndex - actualWindowSize + 2 : indexOffset
         else indexOffset = selectedIndex >= indexOffset + actualWindowSize - 1 ? selectedIndex - actualWindowSize + 1 : indexOffset
+        await clear()
+        await prompt()
+      }],
+      [KeyCombos.parse('left'), async ({clear,prompt}) => {
+        if (!inlineEnabled) return
+        const newIndex = Math.min(Math.max(selectedIndex - 1, 0), visibleOptions.length - 1)
+        if (newIndex === selectedIndex) return
+        selectedIndex = newIndex
+
+        await clear()
+        await prompt()
+      }],
+      [KeyCombos.parse('right'), async ({clear,prompt}) => {
+        if (!inlineEnabled) return
+        const newIndex = Math.min(Math.max(selectedIndex + 1, 0), visibleOptions.length - 1)
+        if (newIndex === selectedIndex) return
+        selectedIndex = newIndex
+
         await clear()
         await prompt()
       }],
