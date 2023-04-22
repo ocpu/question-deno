@@ -10,6 +10,8 @@ interface Option<T> {
   onSelect?(): string[]
   onDeselect?(id: string): boolean
   matchingTextRanges: TextRange[]
+  display: string
+  tags: string[]
 }
 
 const DEFAULT_NO_MORE_CONTENT_PATTERN = '='
@@ -334,7 +336,7 @@ export default async function checkbox<T = string>(label: string, options: T[] |
         const result = selectedIds.map(id => possibleOptions.find(option => option.id === id)!)
         const text = result.length === 0
           ? highlightText('<empty>')
-          : result.map(item => highlightText(item.label)).join(', ')
+          : result.map(item => highlightText(item.display)).join(', ')
         await println(PREFIX + asPromptText(label) + text)
         return { result: result.map(it => it.value) }
       }],
@@ -395,7 +397,7 @@ export default async function checkbox<T = string>(label: string, options: T[] |
     indexOffset = 0
     if (searchText.trim() === '') return visibleOptions = possibleOptions
     const results = textSearch(searchText, possibleOptions, {
-      transformer: item => item.label,
+      transformer: item => item.label + (item.tags.length ? '\t' + item.tags.join(' ') : ''),
       matchCase: filteringOptions.matchCase
     })
     const intermediate = filteringOptions.sorting === 'rank'
@@ -406,7 +408,9 @@ export default async function checkbox<T = string>(label: string, options: T[] |
       ? intermediate.filter(result => result.specificityScore > 0)
       : intermediate
 
-    visibleOptions = finalList.map(result => Object.assign({}, result.item, { matchingTextRanges: result.matches }))
+    visibleOptions = finalList.map(result => Object.assign({}, result.item, {
+      matchingTextRanges: result.matches.filter(it => it.start < result.item.label.length)
+    }))
   }
 
   function select(id: string) {
@@ -432,18 +436,39 @@ export default async function checkbox<T = string>(label: string, options: T[] |
 }
 
 function getOptionsFromArray<T>(options: T[], _defaultSelected: string[]): Option<T>[] {
-  return options.map((value, index) => ({ label: value as unknown as string, value, id: '' + index, matchingTextRanges: [] }))
+  return options.map((value, index) => ({
+    label: value as unknown as string,
+    value,
+    id: '' + index,
+    matchingTextRanges: [],
+    display: value as unknown as string,
+    tags: []
+  }))
 }
 
 export interface ObjectOption<T> {
+  /** The value that is going to be returned if this item is selected. */
   value: T
+  /** A label, index, or a list of labels and indexes for the items that this item requires to be selected. */
   dependencies?: string | number | (string | number)[]
+  /** Set whether this option should be selected by default */
   selected?: boolean
+  /** A string that will represent the value instead of the label when exiting the control. */
+  display?: string
+  /** A list of hidden tags that can also be used when filtering. */
+  tags?: string[]
 }
 
 function getOptionsFromObject<T>(object: Record<string, ObjectOption<T>>, defaultSelected: string[]): Option<T>[] {
   return Object.entries(object).map(([label, objectOption], index, allEntries) => {
-    const option: Option<T> = { label, value: objectOption.value, id: '' + index, matchingTextRanges: [] }
+    const option: Option<T> = {
+      label,
+      value: objectOption.value,
+      id: objectOption.id ?? label,
+      matchingTextRanges: [],
+      display: objectOption.display ?? label,
+      tags: objectOption.tags ?? []
+    }
     if (typeof objectOption.dependencies !== 'undefined') {
       const dependencies: number[] = []
       if (typeof objectOption.dependencies === 'string') dependencies.push(allEntries.findIndex(([label]) => label === objectOption.dependencies))
