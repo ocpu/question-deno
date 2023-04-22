@@ -1,6 +1,5 @@
 import { KeyCombos } from './KeyCombo.ts'
 import { print, println, HIDE_CURSOR, SHOW_CURSOR, PREFIX, asPromptText, CLEAR_LINE, highlightText, createRenderer, PRIMARY_COLOR, RESET_COLOR, moveCursor, getConsoleSize } from './util.ts'
-import config from './config.ts'
 import { TextRange, textSearch } from "./text-util.ts";
 
 interface Option<T> {
@@ -426,10 +425,10 @@ export default async function checkbox<T = string>(label: string, options: T[] |
 
   function deselect(id: string) {
     selectedIds.splice(selectedIds.indexOf(id), 1)
-    for (const selectedIndex of selectedIds.slice()) {
+    for (const selectedId of selectedIds.slice()) {
       let onDeselect: Option<T>['onDeselect'] | undefined
-      if (typeof (onDeselect = possibleOptions.find(it => it.id === id)?.onDeselect) === 'function') {
-        if (onDeselect(id)) deselect(selectedIndex)
+      if (typeof (onDeselect = possibleOptions.find(it => it.id === selectedId)?.onDeselect) === 'function') {
+        if (onDeselect(id)) deselect(selectedId)
       }
     }
   }
@@ -447,6 +446,7 @@ function getOptionsFromArray<T>(options: T[], _defaultSelected: string[]): Optio
 }
 
 export interface ObjectOption<T> {
+  id?: string
   /** The value that is going to be returned if this item is selected. */
   value: T
   /** A label, index, or a list of labels and indexes for the items that this item requires to be selected. */
@@ -460,7 +460,7 @@ export interface ObjectOption<T> {
 }
 
 function getOptionsFromObject<T>(object: Record<string, ObjectOption<T>>, defaultSelected: string[]): Option<T>[] {
-  return Object.entries(object).map(([label, objectOption], index, allEntries) => {
+  return Object.entries(object).map(([label, objectOption], _, allEntries) => {
     const option: Option<T> = {
       label,
       value: objectOption.value,
@@ -470,20 +470,26 @@ function getOptionsFromObject<T>(object: Record<string, ObjectOption<T>>, defaul
       tags: objectOption.tags ?? []
     }
     if (typeof objectOption.dependencies !== 'undefined') {
-      const dependencies: number[] = []
-      if (typeof objectOption.dependencies === 'string') dependencies.push(allEntries.findIndex(([label]) => label === objectOption.dependencies))
-      else if (typeof objectOption.dependencies === 'number') dependencies.push(objectOption.dependencies)
+      let unparsedDeps: (string | number)[] = []
+      if (typeof objectOption.dependencies === 'string') unparsedDeps.push(objectOption.dependencies)
+      else if (typeof objectOption.dependencies === 'number') unparsedDeps.push(objectOption.dependencies)
       else if (Array.isArray(objectOption.dependencies) && objectOption.dependencies.every(dep => ['string', 'number'].includes(typeof dep))) {
-        for (const dep of objectOption.dependencies) {
-          if (typeof dep === 'string') dependencies.push(allEntries.findIndex(([label]) => label === objectOption.dependencies))
-          else dependencies.push(dep)
-        }
+        unparsedDeps = objectOption.dependencies
       }
-      const deps = dependencies.filter(it => it >= 0 && it < allEntries.length).map(index => index + '')
+
+      const deps = unparsedDeps
+        .map(dep => typeof dep === 'number'
+          ? (allEntries[dep]?.[1]?.id ?? allEntries[dep]?.[0])
+          : (() => {
+            const item = allEntries.find(([l, oo], index) => oo.id === dep || l === dep || String(index) === dep)
+            return item?.[1]?.id ?? item?.[0]
+          })())
+        .filter(it => it !== option.id && it !== undefined)
+        .map(id => String(id))
       option.onSelect = () => deps
       option.onDeselect = id => deps.includes(id)
     }
-    if (objectOption.selected === true) defaultSelected.push(''+index)
+    if (objectOption.selected === true) defaultSelected.push(option.id)
 
     return option
   })
